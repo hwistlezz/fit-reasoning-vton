@@ -7,13 +7,17 @@
 - GPU 확인 스크립트 추가
 - CatVTON 외부 참조 방식 정리
 
-## Phase 1. 환경 및 데이터 준비
+## Phase 1. 외부 CatVTON 설정 및 Smoke Test
 
-- CatVTON 실행 환경 구성
-- VITON-HD 데이터셋 로컬 배치
-- DressCode 데이터셋 사용 여부 검토
-- A100 inference 실행 방식 확정
-- 입력 이미지, garment 이미지, target 이미지 경로 규칙 정리
+- 공식 CatVTON 저장소를 `fit-reasoning-vton/` 외부에 clone
+- CatVTON README 기준 conda 환경 설정
+- 외부 CatVTON 경로와 필수 파일 확인
+- GPU 및 PyTorch CUDA 사용 가능 여부 확인
+- Gradio smoke test 실행
+- checkpoint 다운로드 또는 로딩 성공 여부 확인
+- 첫 try-on 결과 생성 여부 확인
+- smoke test command, CatVTON commit hash, GPU 정보 기록
+- VITON-HD와 DressCode 로컬 데이터셋 경로 계획 정리
 
 ## Phase 2. Baseline Inference
 
