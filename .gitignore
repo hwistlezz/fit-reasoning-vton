@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+conda-env/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Datasets and local data
+data/*
+!data/.gitkeep
+datasets/
+external_datasets/
+viton-hd/
+VITON-HD/
+dresscode/
+DressCode/
+
+# CatVTON external references
+external/
+third_party/
+CatVTON/
+catvton/
+CatVTON-main/
+catvton-main/
+
+# Model checkpoints and weights
+checkpoints/
+ckpts/
+weights/
+model_weights/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.onnx
+
+# Generated outputs
+outputs/*
+!outputs/.gitkeep
+results/
+generated/
+renders/
+overlays/
+
+# Logs and experiment artifacts
+logs/
+wandb/
+mlruns/
+tensorboard/
+*.log
+
+# Archives and large binary artifacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
