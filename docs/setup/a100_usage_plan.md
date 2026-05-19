@@ -1,28 +1,25 @@
-# A100 GPU 사용 계획
+# GPU 사용 계획
 
 ## 목적
 
-NVIDIA A100 GPU는 CatVTON baseline inference, baseline evaluation, fine-tuning 실험, 대규모 이미지 생성 실험에 사용한다. 본 프로젝트는 A100을 통해 여러 데이터셋 샘플에 대해 안정적으로 virtual try-on 결과를 생성하고, 이후 fit-aware 분석과 batch feature extraction을 수행할 수 있도록 준비한다.
+GPU는 외부 VTON baseline smoke test와 이후 웹 데모 inference에 사용한다. 이번 텀프로젝트의 우선 대상은 IDM-VTON이며, CatVTON은 optional comparison baseline으로 필요한 경우에만 실행한다.
 
 ## 사용 범위
 
-- pretrained CatVTON baseline inference
-- CatVTON baseline evaluation을 위한 대규모 결과 생성 및 샘플링
-- VITON-HD 전체 또는 샘플 subset inference
-- 선택적 DressCode inference
-- fine-tuning 실험 준비 및 제한적 학습 실험
-- fit-aware feature 후보 검증을 위한 batch feature extraction 준비
-- 생성 결과 품질 점검용 batch inference
+- IDM-VTON smoke test
+- 샘플 이미지 기반 virtual try-on inference
+- 웹 데모용 단일 또는 소규모 batch inference
+- 입력 품질 평가와 착장 결과 신뢰도 분석에 필요한 경량 컴퓨터비전 처리
+- 선택적 CatVTON smoke test 또는 비교 실험
 
 ## 실행 전 확인 항목
 
 - GPU 사용 가능 여부
 - CUDA 및 PyTorch 호환 여부
-- CatVTON 환경 설치 여부
+- 외부 IDM-VTON 경로
 - checkpoint 경로
-- 입력 데이터 경로
+- 샘플 person image와 garment image 경로
 - 출력 디렉터리 용량
-- batch size와 image resolution 설정
 
 ## 리소스 관리 원칙
 
@@ -39,19 +36,18 @@ NVIDIA A100 GPU는 CatVTON baseline inference, baseline evaluation, fine-tuning 
 - GPU 개수
 - PyTorch 버전
 - CUDA 사용 가능 여부
-- CatVTON commit 또는 버전
+- 외부 baseline 이름
+- 외부 baseline commit hash
 - checkpoint 이름
-- 데이터셋 이름
 - 샘플 수
-- batch size
-- resolution
+- 입력 이미지 경로
+- 출력 경로
 - 실행 시간
-- 실패 샘플 수
+- 실패 여부
 
 ## 향후 작성 항목
 
-- 실제 A100 서버 접속 방식
-- job scheduler 사용 여부
-- batch inference command
+- 실제 GPU 서버 접속 방식
+- IDM-VTON inference command
 - mixed precision 사용 여부
 - 실패 시 재시작 전략

@@ -2,18 +2,18 @@
 
 ## 목적
 
-이 문서는 CatVTON을 본 저장소에 복사하지 않고 외부 저장소로 관리하기 위한 Phase 1 설정 절차를 정리한다. 현재 단계의 목표는 CatVTON 실행 환경을 준비하고, Gradio smoke test로 첫 실행 가능 여부를 확인하며, 이후 실험 재현성을 위해 필요한 정보를 기록하는 것이다.
+이 문서는 CatVTON을 본 저장소에 복사하지 않고 외부 저장소로 관리하기 위한 설정 절차를 정리한다. 수정된 프로젝트 계획에서 CatVTON은 main baseline이 아니라 optional comparison baseline이다. 현재 단계의 목표는 필요 시 CatVTON smoke test를 수행할 수 있도록 외부 참조 방식과 재현성 기록 항목을 정리하는 것이다.
 
 ## CatVTON을 외부 저장소로 관리하는 이유
 
-CatVTON은 별도의 연구 코드와 실행 환경을 가진 pretrained virtual try-on baseline이다. 본 저장소는 CatVTON 자체를 수정하거나 복제하는 저장소가 아니라, CatVTON 결과를 기반으로 fit-aware 분석과 설명 레이어를 준비하는 저장소이다.
+CatVTON은 별도의 연구 코드와 실행 환경을 가진 pretrained virtual try-on baseline이다. 본 저장소는 CatVTON 자체를 수정하거나 복제하는 저장소가 아니라, 여러 VTON baseline 결과를 해석하는 Fit-aware Reasoning Layer를 준비하는 저장소이다.
 
 외부 저장소로 분리하면 다음 장점이 있다.
 
 - 원본 CatVTON 코드와 본 프로젝트 분석 코드를 명확히 분리할 수 있다.
 - CatVTON upstream 변경 이력을 별도 commit hash로 기록할 수 있다.
 - 대용량 checkpoint, generated image, log가 본 저장소에 섞이는 것을 방지할 수 있다.
-- 향후 baseline, fine-tuning, 분석 실험의 재현성을 더 명확히 관리할 수 있다.
+- 향후 optional comparison 실험의 재현성을 더 명확히 관리할 수 있다.
 
 ## 라이선스 주의
 
@@ -26,13 +26,14 @@ CatVTON 공식 저장소 기준 라이선스는 Creative Commons BY-NC-SA 4.0으
 ```text
 workspace/
   fit-reasoning-vton/
+  IDM-VTON/
   CatVTON/
   datasets/
     VITON-HD/
     DressCode/
 ```
 
-`fit-reasoning-vton/`은 본 저장소이고, `CatVTON/`은 공식 CatVTON 저장소를 별도로 clone한 위치이다. `datasets/`는 원본 데이터셋을 두는 로컬 경로이며 GitHub에 커밋하지 않는다.
+`fit-reasoning-vton/`은 본 저장소이고, `IDM-VTON/`은 main baseline, `CatVTON/`은 optional comparison baseline을 별도로 clone한 위치이다. `datasets/`는 원본 데이터셋을 두는 로컬 경로이며 GitHub에 커밋하지 않는다.
 
 ## CatVTON Clone
 
@@ -53,7 +54,7 @@ cd CatVTON
 git rev-parse HEAD
 ```
 
-이 값은 smoke test log, baseline inference log, fine-tuning 실험 계획에 함께 기록한다.
+이 값은 CatVTON smoke test log 또는 optional comparison 실험 기록에 함께 기록한다.
 
 ## Conda 환경 설정
 
@@ -66,7 +67,7 @@ conda activate catvton
 pip install -r requirements.txt
 ```
 
-본 저장소에는 CatVTON 의존성을 추가하지 않는다. CatVTON 실행에 필요한 Python 패키지는 `catvton` conda 환경에 설치한다.
+본 저장소에는 CatVTON 의존성을 추가하지 않는다. CatVTON 실행에 필요한 Python 패키지는 별도 conda 환경에 설치한다.
 
 ## GPU 확인
 
@@ -126,7 +127,7 @@ CUDA_VISIBLE_DEVICES=0 python app.py \
 - checkpoint 다운로드 성공 여부
 - 오류 발생 시 terminal log 일부
 
-로그 내용은 [CatVTON smoke test 로그 템플릿](../experiments/catvton_smoke_test_log_template.md)에 요약해서 기록한다.
+로그 내용은 [CatVTON smoke test 로그 템플릿](../experiments/catvton_smoke_test_log_template.md)에 요약해서 기록한다. 비교 결과나 성능 수치는 실제 실행 후에만 기록한다.
 
 ## 커밋하지 않을 항목
 

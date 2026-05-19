@@ -8,7 +8,7 @@
 
 - VITON-HD 원본 이미지
 - DressCode 원본 이미지
-- CatVTON 생성 결과 이미지
+- IDM-VTON 또는 CatVTON 생성 결과 이미지
 - segmentation mask, pose map 등 중간 산출물
 - checkpoint 및 model weight
 - 대용량 압축 파일
@@ -30,7 +30,7 @@
 - 공개 가능한 이미지인지
 - 데이터셋 라이선스가 결과 이미지 공개를 허용하는지
 - 생성 이미지가 실제 착용 사진으로 오해되지 않도록 표시했는지
-- fit tendency 분석이 실제 신체 치수 또는 정확한 사이즈 예측으로 표현되지 않았는지
+- fit confidence 분석이 실제 신체 치수 또는 정확한 사이즈 예측으로 표현되지 않았는지
 
 ## 향후 작성 항목
 

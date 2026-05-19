@@ -11,7 +11,8 @@
 
 향후 notebook 후보:
 
-- baseline 결과 샘플 검토
-- fit-aware feature 분포 확인
-- pseudo label과 gold label 비교
+- IDM-VTON smoke test 결과 샘플 검토
+- input quality feature 분포 확인
+- fit confidence score 후보 비교
+- CatVTON optional comparison 결과 검토
 - overlay visualization 프로토타입

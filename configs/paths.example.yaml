@@ -1,5 +1,17 @@
-catvton_root: "../CatVTON"
-viton_hd_root: "../datasets/VITON-HD"
-dresscode_root: "../datasets/DressCode"
-output_root: "./outputs"
+external_repos:
+  idm_vton: "../IDM-VTON"
+  catvton: "../CatVTON"
+
+data:
+  samples: "./data/samples"
+
+outputs:
+  root: "./outputs"
+  idm_vton: "./outputs/idm_vton"
+  catvton: "./outputs/catvton"
+  analysis: "./outputs/analysis"
+
+checkpoints:
+  idm_vton: "../checkpoints/IDM-VTON"
+  catvton: "../checkpoints/CatVTON"
 

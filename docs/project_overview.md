@@ -1,67 +1,78 @@
 # 프로젝트 개요
 
+## 프로젝트명
+
+**Fit-Confidence Virtual Try-On**
+
+**체형·핏 신뢰도 평가를 제공하는 가상 착장 웹 시스템**
+
 ## 프로젝트 목표
 
-이 프로젝트는 CatVTON 기반 가상 착용 결과를 분석하여, 의류가 사람 이미지에서 어떤 시각적 핏 경향을 보이는지 설명하는 시스템을 구축하는 것을 목표로 한다.
+이 프로젝트는 사람 이미지와 의류 이미지를 입력받아 가상 착장 결과 이미지를 생성하고, 그 결과가 얼마나 신뢰 가능한지 컴퓨터비전 특징 기반으로 평가하는 웹 시스템을 목표로 한다.
 
-핵심 목표는 실제 신체 치수나 정확한 의류 사이즈 예측이 아니다. 본 프로젝트는 생성된 virtual try-on 결과에서 관찰 가능한 시각적 패턴을 바탕으로 `slim`, `regular`, `oversized`와 같은 핏 경향을 분석한다.
+기존 가상 착장 모델의 결과를 해석하는 **Fit-aware Reasoning Layer**이다.
 
 ## 문제 정의
 
-가상 착용 모델은 착용 결과 이미지를 생성하지만, 사용자가 그 결과를 해석하기 위해서는 별도의 설명이 필요하다. 본 프로젝트는 생성 이미지에서 의류의 폭, 길이, 실루엣, 어깨선, 밑단 위치 등 시각적 단서를 추출하고 이를 사람이 이해할 수 있는 설명으로 변환한다.
+기존 가상 착장 모델은 이미지를 생성하지만, 생성 결과가 신뢰 가능한지 또는 어떤 부분이 어색한지 설명하지 못하는 경우가 많다. 사용자는 결과 이미지가 성공적인지, 입력 이미지 품질이 낮아서 실패했는지, 포즈나 세그멘테이션이 불안정한지 판단하기 어렵다.
+
+본 프로젝트는 생성 이미지와 함께 입력 품질 점수, 착장 결과 신뢰도 점수, 간단한 핏 해석, 실패 원인을 제공하는 방향을 다룬다.
 
 ## 핵심 파이프라인
 
-1. pretrained CatVTON을 baseline으로 사용한다.
-2. NVIDIA A100 GPU에서 대규모 inference를 수행한다.
-3. VITON-HD 및 선택적으로 DressCode 데이터셋을 사용해 virtual try-on 결과를 생성한다.
-4. CatVTON baseline 결과를 평가한다.
-5. paired data 기반 fine-tuning 실험 계획을 수립한다.
-6. real paired target과 CatVTON pseudo target을 명확히 구분한다.
-7. fit-aware visual feature를 추출한다.
-8. pseudo fit label을 생성한다.
-9. 사람이 검수한 gold set을 구축한다.
-10. rule-based labeling과 feature-based classifier를 비교한다.
-11. 분석 신뢰도를 계산한다.
-12. overlay visualization과 자연어 설명을 제공한다.
-13. 이후 Fit Report UI로 확장한다.
+1. 사람 이미지와 의류 이미지를 입력받는다.
+2. IDM-VTON을 main baseline으로 사용해 가상 착장 이미지를 생성한다.
+3. CatVTON은 optional comparison baseline으로 유지한다.
+4. 포즈, 세그멘테이션, 실루엣, 의류 보존 정도를 분석한다.
+5. 입력 품질 점수와 착장 결과 신뢰도 점수를 계산한다.
+6. 기장감, 품 여유, 소매 길이, 어깨선 등 간단한 핏 해석을 제공한다.
+7. 웹 화면에서 착장 이미지, 신뢰도 점수, 핏 해석, 실패 원인을 보여준다.
 
-## Fit-Aware Visual Features
+## Fit-Aware Reasoning Layer
 
-초기 후보 특징은 다음과 같다.
+초기 후보 분석 요소는 다음과 같다.
 
-- `width_ratio`: 의류 폭과 기준 인체 영역의 상대 비율
-- `length_ratio`: 의류 길이와 기준 인체 영역의 상대 비율
-- `silhouette_ratio`: 착용 결과의 실루엣 확장 정도
-- `shoulder_ratio`: 어깨선 또는 상의 어깨 폭의 상대 비율
-- `hem_position`: 밑단 위치의 상대적 위치
+- `pose_quality`: 사람 이미지의 자세 안정성
+- `segmentation_quality`: 사람/의류 영역 분리 안정성
+- `silhouette_consistency`: 착장 전후 실루엣 변화의 자연스러움
+- `garment_preservation`: 의류 색상, 패턴, 형태 보존 정도
+- `length_tendency`: 기장감 경향
+- `roominess_tendency`: 품 여유 경향
+- `sleeve_length_tendency`: 소매 길이 경향
+- `shoulder_line_tendency`: 어깨선 경향
 
-이 문서 단계에서는 특징 추출 알고리즘을 구현하지 않는다. 실제 계산 방식은 segmentation, keypoint, garment parsing 결과를 검토한 뒤 별도 설계한다.
+현재 문서 단계에서는 feature extraction 알고리즘을 구현하지 않는다. 실제 계산 방식은 smoke test 결과와 사용 가능한 pose, segmentation, parsing 도구를 확인한 뒤 결정한다.
 
-## Pseudo Fit Labels
+## 모델 사용 방향
 
-초기 pseudo label 후보는 다음과 같다.
+### IDM-VTON
 
-- `overall_fit`: `slim`, `regular`, `oversized`
-- `length_label`: `short`, `normal`, `long`
-- `roominess_label`: `tight`, `regular`, `roomy`
+IDM-VTON은 이번 텀프로젝트의 main baseline이다. 한 달 안에 작동하는 웹 데모를 만들기 위해 우선 실행 대상으로 둔다.
 
-pseudo label은 실제 정답이 아니라 실험용 약한 라벨이다. 최종 평가에는 사람이 검수한 gold set을 사용한다.
+### CatVTON
+
+CatVTON은 삭제하지 않고 optional comparison baseline으로 유지한다. 가능하면 같은 샘플에 대해 IDM-VTON 결과와 비교하지만, 이번 텀프로젝트의 필수 구현 대상은 아니다.
+
+### StableVITON
+
+StableVITON은 이번 텀프로젝트의 필수 구현 대상이 아니다. 후속 캡스톤 확장 또는 research extension으로 언급한다.
 
 ## 명확한 비목표
 
 - 실제 신체 치수 예측
 - 정확한 의류 사이즈 추천
-- 의료적 또는 인체 측정학적 판단
-- 검증되지 않은 수치 결과 제시
-- CatVTON 원본 코드를 이 저장소에 복사하는 방식
+- VTON 모델을 처음부터 학습
+- CatVTON 직접 파인튜닝
+- 대규모 FIT 데이터셋 전체 학습
+- StableVITON 필수 구현
+- 검증되지 않은 성능 수치 제시
 
 ## 산출물
 
-- 데이터셋 구성 및 정책 문서
-- CatVTON baseline 평가 계획
-- fine-tuning 실험 계획
-- fit-aware feature 설계 문서
-- pseudo label 및 gold set 구축 계획
-- overlay visualization 및 자연어 설명 설계
-- 향후 Fit Report UI 설계 기반
+- proposal 제출용 README
+- 외부 baseline 설정 문서
+- smoke test 로그 템플릿
+- 웹 데모 구현 계획
+- 입력 품질 평가 및 fit confidence score 설계
+- fit reasoning 문장 생성 계획
+- 성공/실패 사례 정리 계획

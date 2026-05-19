@@ -41,13 +41,17 @@ VITON-HD/
 dresscode/
 DressCode/
 
-# CatVTON external references
+# External VTON repository references
 external/
 third_party/
 CatVTON/
 catvton/
 CatVTON-main/
 catvton-main/
+IDM-VTON/
+idm-vton/
+IDM-VTON-main/
+idm-vton-main/
 
 # Model checkpoints and weights
 checkpoints/

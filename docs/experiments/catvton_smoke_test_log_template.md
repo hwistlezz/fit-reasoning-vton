@@ -1,4 +1,6 @@
-# CatVTON Smoke Test 로그 템플릿
+# CatVTON Optional Comparison Smoke Test 로그 템플릿
+
+CatVTON은 이번 프로젝트의 main baseline이 아니라 optional comparison baseline이다. 이 로그는 실제 CatVTON smoke test를 수행한 경우에만 작성한다.
 
 ## 기본 정보
 
@@ -41,4 +43,3 @@
 ## 다음 액션
 
 - 향후 작성
-

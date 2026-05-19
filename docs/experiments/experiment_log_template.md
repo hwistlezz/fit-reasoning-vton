@@ -16,7 +16,8 @@
 - Python 버전:
 - PyTorch 버전:
 - CUDA 사용 가능 여부:
-- CatVTON commit 또는 버전:
+- 외부 baseline 이름:
+- 외부 baseline commit 또는 버전:
 - checkpoint:
 
 ## 데이터
@@ -27,7 +28,7 @@
 - person image 경로:
 - garment image 경로:
 - real target 경로:
-- pseudo target 경로:
+- generated output 경로:
 
 ## 실행 설정
 
