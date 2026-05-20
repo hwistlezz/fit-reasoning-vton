@@ -1,88 +1,39 @@
 # Python
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
+*.pyc
 .venv/
-venv/
-env/
-ENV/
-conda-env/
+.env
+.env.*
 
-# IDE / OS
-.idea/
-.vscode/
+# OS
 .DS_Store
 Thumbs.db
 
-# Notebooks
-.ipynb_checkpoints/
+# Datasets
+backend/datasets/raw/*
+backend/datasets/processed/*
+backend/datasets/raw_test/*
+backend/datasets/*.csv
 
-# Local environment files
-.env
-.env.*
-!.env.example
+!backend/datasets/.gitkeep
+!backend/datasets/raw/.gitkeep
+!backend/datasets/processed/.gitkeep
+!backend/datasets/raw_test/.gitkeep
 
-# Datasets and local data
-data/*
-!data/.gitkeep
-datasets/
-external_datasets/
-viton-hd/
-VITON-HD/
-dresscode/
-DressCode/
+# Models / checkpoints
+backend/models/*
+backend/checkpoints/*
 
-# External VTON repository references
-external/
-third_party/
-CatVTON/
-catvton/
-CatVTON-main/
-catvton-main/
-IDM-VTON/
-idm-vton/
-IDM-VTON-main/
-idm-vton-main/
+!backend/models/.gitkeep
+!backend/models/dwpose/
+!backend/models/dwpose/.gitkeep
+!backend/models/schp/
+!backend/models/schp/.gitkeep
 
-# Model checkpoints and weights
-checkpoints/
-ckpts/
-weights/
-model_weights/
-*.ckpt
-*.pt
-*.pth
-*.safetensors
-*.onnx
-
-# Generated outputs
-outputs/*
-!outputs/.gitkeep
-results/
-generated/
-renders/
-overlays/
-
-# Logs and experiment artifacts
-logs/
-wandb/
-mlruns/
-tensorboard/
+# Outputs / logs
+backend/outputs/*
+backend/logs/*
 *.log
 
-# Archives and large binary artifacts
-*.zip
-*.tar
-*.tar.gz
-*.tgz
-*.7z
-*.rar
+!backend/outputs/.gitkeep
+!backend/logs/.gitkeep
