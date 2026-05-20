@@ -2,15 +2,9 @@
 
 ## 실험 개요
 
-- 프로젝트명: Fit-Confidence Virtual Try-On
-- 한국어 제목: 체형·핏 신뢰도 평가를 제공하는 가상 착장 웹 시스템
-<<<<<<< HEAD
-- 실험 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅과 실행 준비 상태를 기록한다.
-- 현재 상태: IDM-VTON inference 실행 전 준비 단계
-=======
-- 실험 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅, 실행 과정, 트러블슈팅, 최종 Gradio demo 실행 결과를 기록한다.
+- 프로젝트명: Fit-Confidence Virtual Try-On (체형·핏 신뢰도 평가를 제공하는 가상 착장 웹 시스템)
+- 실험 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅, 실행 과정, 트러블슈팅, 최종 Gradio demo 실행 결과를 기록한다.
 - 현재 상태: IDM-VTON local Gradio demo smoke test 성공
->>>>>>> 329d63d (docs(#1/experiment): IDM-VTON Gradio smoke test 결과 기록)
 - 기록일: 2026-05-20
 
 본 프로젝트의 핵심 기여는 VTON 모델 자체 구현이 아니라, 기존 VTON 결과를 컴퓨터비전 특징 기반으로 분석하는 Fit-aware Reasoning Layer이다. 이번 로그에는 RTX 4080 환경에서 IDM-VTON local Gradio demo를 실행하기 위한 준비 과정과 smoke test 결과를 기록한다. 결과 이미지는 본 저장소에 커밋하지 않는다.
@@ -18,11 +12,7 @@
 ## 작업 브랜치
 
 - 현재 작업 브랜치: `experiment/#1/idm-vton-smoke-test`
-<<<<<<< HEAD
-- 브랜치 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 준비 과정을 문서화한다.
-=======
-- 브랜치 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 과정을 문서화한다.
->>>>>>> 329d63d (docs(#1/experiment): IDM-VTON Gradio smoke test 결과 기록)
+- 브랜치 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 과정을 문서화한다.
 
 ## 저장소 구조
 
