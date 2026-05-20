@@ -1,19 +1,28 @@
-# IDM-VTON Smoke Test 4080 환경 준비 로그
+# IDM-VTON Smoke Test 4080 환경 및 Gradio 실행 로그
 
 ## 실험 개요
 
 - 프로젝트명: Fit-Confidence Virtual Try-On
 - 한국어 제목: 체형·핏 신뢰도 평가를 제공하는 가상 착장 웹 시스템
+<<<<<<< HEAD
 - 실험 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅과 실행 준비 상태를 기록한다.
 - 현재 상태: IDM-VTON inference 실행 전 준비 단계
+=======
+- 실험 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅, 실행 과정, 트러블슈팅, 최종 Gradio demo 실행 결과를 기록한다.
+- 현재 상태: IDM-VTON local Gradio demo smoke test 성공
+>>>>>>> 329d63d (docs(#1/experiment): IDM-VTON Gradio smoke test 결과 기록)
 - 기록일: 2026-05-20
 
-본 프로젝트의 핵심 기여는 VTON 모델 자체 구현이 아니라, 기존 VTON 결과를 컴퓨터비전 특징 기반으로 분석하는 Fit-aware Reasoning Layer이다. 이번 로그에는 모델 실행 결과나 생성 이미지가 아니라, RTX 4080 환경에서 IDM-VTON을 실행하기 위한 준비 상태만 기록한다.
+본 프로젝트의 핵심 기여는 VTON 모델 자체 구현이 아니라, 기존 VTON 결과를 컴퓨터비전 특징 기반으로 분석하는 Fit-aware Reasoning Layer이다. 이번 로그에는 RTX 4080 환경에서 IDM-VTON local Gradio demo를 실행하기 위한 준비 과정과 smoke test 결과를 기록한다. 결과 이미지는 본 저장소에 커밋하지 않는다.
 
 ## 작업 브랜치
 
 - 현재 작업 브랜치: `experiment/#1/idm-vton-smoke-test`
+<<<<<<< HEAD
 - 브랜치 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 준비 과정을 문서화한다.
+=======
+- 브랜치 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 과정을 문서화한다.
+>>>>>>> 329d63d (docs(#1/experiment): IDM-VTON Gradio smoke test 결과 기록)
 
 ## 저장소 구조
 
@@ -181,28 +190,287 @@ CUDA device name: NVIDIA GeForce RTX 4080
 CUDA device count: 1
 ```
 
-## 아직 하지 않은 작업
+### 4. Checkpoint placeholder 문제와 해결
 
-아래 작업은 아직 수행하지 않았다.
+처음에는 `D:\GitHub\IDM-VTON\ckpt` 아래에 필요한 파일명이 존재했지만, 실제 checkpoint가 아니라 매우 작은 placeholder 파일이었다.
 
-- IDM-VTON inference 실행
-- checkpoint 다운로드
-- sample person / garment 이미지 준비
-- generated image 생성
-- 결과 이미지 저장
-- README에 실제 결과 추가
-- PR 생성
+확인 명령어:
 
-따라서 현재 문서에는 inference 성공, 결과 이미지 생성 성공, 성능 수치, 성공 사례를 기록하지 않는다.
+```powershell
+Get-ChildItem .\ckpt\humanparsing -Recurse | Select-Object FullName, Length
+Get-ChildItem .\ckpt\densepose -Recurse | Select-Object FullName, Length
+Get-ChildItem .\ckpt\openpose -Recurse | Select-Object FullName, Length
+```
+
+초기 확인 결과:
+
+```text
+D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_atr.onnx          25
+D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_lip.onnx          25
+D:\GitHub\IDM-VTON\ckpt\densepose\model_final_162be9.pkl       31
+D:\GitHub\IDM-VTON\ckpt\openpose\ckpts\body_pose_model.pth     28
+```
+
+이 상태에서 Gradio demo 실행 중 다음 오류가 발생했다.
+
+```text
+onnxruntime.capi.onnxruntime_pybind11_state.InvalidProtobuf:
+[ONNXRuntimeError] : 7 : INVALID_PROTOBUF :
+Load model from D:\GitHub\IDM-VTON\ckpt/humanparsing/parsing_atr.onnx failed:
+Protobuf parsing failed.
+```
+
+원인은 checkpoint 경로에 파일은 있었지만 실제 모델 파일이 아니라 매우 작은 placeholder 파일이었고, ONNXRuntime이 `parsing_atr.onnx`를 정상적인 ONNX protobuf 모델로 읽지 못했기 때문이다.
+
+해결 방법:
+
+1. 기존 작은 checkpoint 파일을 삭제했다.
+2. Hugging Face Space `yisol/IDM-VTON`에서 실제 checkpoint 파일을 재다운로드했다.
+
+삭제 명령어:
+
+```powershell
+Remove-Item .\ckpt\humanparsing\parsing_atr.onnx
+Remove-Item .\ckpt\humanparsing\parsing_lip.onnx
+Remove-Item .\ckpt\densepose\model_final_162be9.pkl
+Remove-Item .\ckpt\openpose\ckpts\body_pose_model.pth
+```
+
+재다운로드 스크립트:
+
+```powershell
+@'
+from huggingface_hub import hf_hub_download
+
+repo_id = "yisol/IDM-VTON"
+repo_type = "space"
+local_dir = r"D:\GitHub\IDM-VTON"
+
+files = [
+    "ckpt/humanparsing/parsing_atr.onnx",
+    "ckpt/humanparsing/parsing_lip.onnx",
+    "ckpt/densepose/model_final_162be9.pkl",
+    "ckpt/openpose/ckpts/body_pose_model.pth",
+]
+
+for file in files:
+    print(f"Downloading {file} ...")
+    path = hf_hub_download(
+        repo_id=repo_id,
+        repo_type=repo_type,
+        filename=file,
+        local_dir=local_dir,
+        local_dir_use_symlinks=False,
+        force_download=True,
+    )
+    print(f"Saved to: {path}")
+
+print("All checkpoint files downloaded.")
+'@ | python
+```
+
+재다운로드 후 파일 크기:
+
+```text
+D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_atr.onnx      266859305
+D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_lip.onnx      266863411
+D:\GitHub\IDM-VTON\ckpt\densepose\model_final_162be9.pkl   255757821
+D:\GitHub\IDM-VTON\ckpt\openpose\ckpts\body_pose_model.pth 209267595
+```
+
+위 checkpoint 파일은 외부 IDM-VTON 저장소 경로에 준비한 것이며, 본 저장소에 커밋하지 않는다.
+
+### 5. Gradio / FastAPI / Starlette / Jinja2 호환 문제와 해결
+
+checkpoint 문제 해결 후 Gradio demo를 다시 실행했지만, 웹 접속 과정에서 다음 오류가 발생했다.
+
+```text
+TypeError: unhashable type: 'dict'
+```
+
+당시 Gradio 관련 버전:
+
+```text
+gradio 4.24.0
+fastapi 0.136.1
+starlette 1.0.0
+jinja2 3.1.6
+pydantic 2.13.4
+```
+
+해결을 위해 다음 패키지 버전을 고정했다.
+
+```powershell
+python -m pip install "fastapi==0.110.0" "starlette==0.36.3" "jinja2==3.1.3"
+python -m pip check
+```
+
+확인 결과:
+
+```text
+No broken requirements found.
+```
+
+### 6. Pydantic 호환 문제와 해결
+
+그 다음 실행에서는 Gradio 서버는 열렸지만 API info 생성 과정에서 다음 오류가 발생했다.
+
+```text
+TypeError: argument of type 'bool' is not iterable
+```
+
+당시 Gradio 관련 버전:
+
+```text
+gradio 4.24.0
+gradio_client 0.14.0
+fastapi 0.110.0
+starlette 0.36.3
+jinja2 3.1.3
+pydantic 2.13.4
+```
+
+해결을 위해 `pydantic`을 포함한 Gradio 관련 패키지 버전을 아래와 같이 고정했다.
+
+```powershell
+python -m pip install "gradio==4.24.0" "gradio_client==0.14.0" "pydantic==2.7.4" "fastapi==0.110.0" "starlette==0.36.3" "jinja2==3.1.3"
+python -m pip check
+```
+
+확인 결과:
+
+```text
+No broken requirements found.
+```
+
+## Hugging Face cache 경로 설정
+
+PowerShell에서 다음 환경 변수를 설정했다.
+
+```powershell
+$env:HF_HOME="D:\hf-cache"
+$env:HF_HUB_CACHE="D:\hf-cache\hub"
+New-Item -ItemType Directory -Force -Path $env:HF_HOME | Out-Null
+New-Item -ItemType Directory -Force -Path $env:HF_HUB_CACHE | Out-Null
+```
+
+확인 결과:
+
+```text
+D:\hf-cache
+D:\hf-cache\hub
+```
+
+목적:
+
+- 모델 다운로드 cache를 D 드라이브에 저장한다.
+- C 드라이브 용량 부담을 줄인다.
+
+첫 Gradio demo 실행 시 Hugging Face에서 모델 파일들이 다운로드되었다.
+
+다운로드된 주요 파일 예시:
+
+```text
+diffusion_pytorch_model.bin: 12.0G
+model.safetensors: 492M
+model.safetensors: 2.78G
+model.safetensors: 2.53G
+diffusion_pytorch_model.safetensors: 335M
+diffusion_pytorch_model.safetensors: 10.3G
+```
+
+Windows symlink 관련 경고가 발생했지만, cache는 degraded mode로 동작하며 다운로드 자체는 진행되었다.
+
+경고 요지:
+
+```text
+huggingface_hub cache-system uses symlinks by default ...
+your machine does not support them ...
+Caching files will still work but in a degraded version
+```
+
+이 경고는 blocking error가 아니라 warning으로 기록한다.
+
+## 최종 고정된 Gradio 관련 버전
+
+최종 Gradio 관련 버전은 다음과 같다.
+
+```text
+gradio 4.24.0
+gradio_client 0.14.0
+fastapi 0.110.0
+starlette 0.36.3
+jinja2 3.1.3
+pydantic 2.7.4
+```
+
+## 최종 Gradio demo 실행 결과
+
+최종 실행 명령어:
+
+```powershell
+$env:HF_HOME="D:\hf-cache"
+$env:HF_HUB_CACHE="D:\hf-cache\hub"
+
+cd D:\GitHub\IDM-VTON
+python .\gradio_demo\app.py
+```
+
+성공 로그:
+
+```text
+Loading pipeline components...: 100%
+Running on local URL:  http://127.0.0.1:7860
+```
+
+이후 Gradio UI에서 기본 example person image와 garment image를 사용해 Try-on을 실행했다. Gradio UI에서 output image가 생성되는 것을 시각적으로 확인했다.
+
+생성 과정 로그:
+
+```text
+100%|████████████████████████████████████████████████████████████████████████| 30/30 [02:07<00:00,  4.25s/it]
+```
+
+한 번 더 실행했을 때:
+
+```text
+100%|████████████████████████████████████████████████████████████████████████| 30/30 [01:47<00:00,  3.57s/it]
+```
+
+위 시간은 공식 benchmark가 아니다. 단순히 local Gradio smoke test 실행 중 관찰된 실행 시간으로만 기록한다.
+
+## Smoke test 결과 요약
+
+- Status: Success
+- Demo type: IDM-VTON local Gradio demo
+- Machine: School RTX 4080 GPU workstation
+- URL: `http://127.0.0.1:7860`
+- Input: built-in example person image and garment image
+- Output: try-on image generated and visually confirmed in Gradio UI
+- Inference steps: 30
+- Runtime observed: about 2 minutes for the first run, about 1 minute 47 seconds for a later run
+- Note: This is not a formal benchmark. It only verifies that the local Gradio demo runs and generates an output image.
+
+결과 이미지는 본 저장소에 커밋하지 않는다. README에도 결과 이미지나 benchmark처럼 보이는 성능 수치를 추가하지 않는다.
+
+## 현재 남은 작업
+
+아래 작업은 아직 남아 있다.
+
+- 직접 촬영 이미지 또는 직접 고른 sample person / garment 이미지로 추가 테스트
+- 생성 결과를 repository 밖 또는 ignored output 경로에 저장
+- smoke test 결과를 기반으로 PR 생성
+- 이후 Fit Confidence / Fit-aware Reasoning Layer 구현으로 넘어가기
+
+외부 IDM-VTON 코드, checkpoint 파일, Hugging Face cache 파일, dataset 파일, generated image, UI screenshot은 본 저장소에 커밋하지 않는다.
 
 ## 다음 실행 계획
 
-1. IDM-VTON 공식 README 기준으로 필요한 checkpoint 파일을 준비한다.
-2. checkpoint 폴더 구조와 실제 파일 존재 여부를 확인한다.
-3. sample person / garment 이미지를 준비한다.
-4. Gradio demo 실행 전 import와 경로를 다시 확인한다.
-5. local Gradio demo를 실행한다.
-6. demo가 정상 실행되면 별도 smoke test 로그에 실행 명령어, 입력 이미지 경로, 출력 경로, 관찰 결과를 기록한다.
+1. 직접 촬영 이미지 또는 직접 고른 sample person / garment 이미지를 준비한다.
+2. 생성 결과 저장 위치를 repository 밖 또는 ignored output 경로로 정한다.
+3. 추가 sample 기반 smoke test를 수행한다.
+4. smoke test 결과를 기반으로 PR을 생성한다.
+5. 이후 Fit Confidence / Fit-aware Reasoning Layer 구현으로 넘어간다.
 
 ## checkpoint 준비 체크리스트
 
@@ -222,12 +490,12 @@ D:\GitHub\IDM-VTON\ckpt
         └── body_pose_model.pth
 ```
 
-현재 `ckpt` 폴더와 하위 폴더는 존재하지만, 실제 필요한 checkpoint 파일이 들어 있는지는 아직 확인하지 않았다. 따라서 checkpoint 파일 준비 상태는 **확인 필요**로 둔다.
+초기 준비 단계에서는 `ckpt` 폴더와 하위 폴더가 존재했지만, 실제 필요한 checkpoint 파일이 들어 있는지는 확인이 필요했다. 이후 Gradio 실행 단계에서 작은 placeholder 파일 문제를 확인했고, Hugging Face Space `yisol/IDM-VTON`에서 실제 checkpoint 파일을 재다운로드했다.
 
-- `D:\GitHub\IDM-VTON\ckpt\densepose\model_final_162be9.pkl`: 확인 필요
-- `D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_atr.onnx`: 확인 필요
-- `D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_lip.onnx`: 확인 필요
-- `D:\GitHub\IDM-VTON\ckpt\openpose\ckpts\body_pose_model.pth`: 확인 필요
+- `D:\GitHub\IDM-VTON\ckpt\densepose\model_final_162be9.pkl`: 재다운로드 완료, 외부 경로 보관
+- `D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_atr.onnx`: 재다운로드 완료, 외부 경로 보관
+- `D:\GitHub\IDM-VTON\ckpt\humanparsing\parsing_lip.onnx`: 재다운로드 완료, 외부 경로 보관
+- `D:\GitHub\IDM-VTON\ckpt\openpose\ckpts\body_pose_model.pth`: 재다운로드 완료, 외부 경로 보관
 
 ## Gradio demo 실행 전 체크리스트
 
@@ -235,18 +503,21 @@ D:\GitHub\IDM-VTON\ckpt
 - `D:\GitHub\IDM-VTON` 외부 저장소 위치 확인
 - 외부 IDM-VTON commit hash 기록 확인: `0d5f3ec2d737487a9bb24e4100936ad254780383`
 - checkpoint 파일 존재 여부 확인
-- sample person 이미지 준비
-- sample garment 이미지 준비
+- built-in example person image 사용
+- built-in example garment image 사용
 - 실행 결과 저장 위치 결정
 - generated image를 본 저장소에 커밋하지 않는 원칙 재확인
 
 ## checkpoint / Gradio demo 계획
 
-Gradio demo 실행 명령어 후보:
+Gradio demo 실행 명령어:
 
 ```powershell
+$env:HF_HOME="D:\hf-cache"
+$env:HF_HUB_CACHE="D:\hf-cache\hub"
+
 cd D:\GitHub\IDM-VTON
 python .\gradio_demo\app.py
 ```
 
-위 명령어는 아직 실행하지 않았다. 현재 상태는 **실행 예정**이다.
+위 명령어로 local Gradio demo 실행에 성공했다.
