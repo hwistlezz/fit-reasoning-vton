@@ -4,7 +4,7 @@
 
 - 프로젝트명: Fit-Confidence Virtual Try-On
 - 한국어 제목: 체형·핏 신뢰도 평가를 제공하는 가상 착장 웹 시스템
-- 실험 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅과 실행 준비 상태를 기록한다.
+- 실험 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 실행하기 위한 환경 세팅과 실행 준비 상태를 기록한다.
 - 현재 상태: IDM-VTON inference 실행 전 준비 단계
 - 기록일: 2026-05-20
 
@@ -13,7 +13,7 @@
 ## 작업 브랜치
 
 - 현재 작업 브랜치: `experiment/#1/idm-vton-smoke-test`
-- 브랜치 목적: 학교 RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 준비 과정을 문서화한다.
+- 브랜치 목적: RTX 4080 GPU 컴퓨터에서 IDM-VTON smoke test를 준비하고, 환경 세팅 및 실행 준비 과정을 문서화한다.
 
 ## 저장소 구조
 
