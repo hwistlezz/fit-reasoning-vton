@@ -1,59 +1,40 @@
-# Dataset Policy
+# 데이터 정책
 
-## 목적
+## 기본 원칙
 
-이 문서는 PC2에서 수집하거나 생성하는 이미지, CSV, preprocessing 결과, 로그, checkpoint 파일이 GitHub에 올라가지 않도록 관리 기준을 정리한다.
+데이터셋, 생성 이미지, 체크포인트, 로그, 모델 가중치는 GitHub에 커밋하지 않는다. 저장소에는 재현 가능한 경로 규칙, manifest schema, 실험 계획만 남긴다.
 
-## 원칙
+## 금지 항목
 
-실제 데이터는 GitHub에 커밋하지 않는다.
+- VITON-HD 원본 이미지
+- DressCode 원본 이미지
+- IDM-VTON 또는 CatVTON 생성 결과 이미지
+- segmentation mask, pose map 등 중간 산출물
+- checkpoint 및 model weight
+- 대용량 압축 파일
+- 공개 권한이 불명확한 annotation 파일
+- 개인정보가 포함될 수 있는 원본 이미지
 
-GitHub에는 다음만 포함한다.
+## 라이선스 및 사용 조건
 
-- 폴더 구조 유지를 위한 `.gitkeep`
-- 형식 공유를 위한 `*.example.csv`
-- 데이터 수집/관리 문서
-- 데이터 다운로드 또는 정리용 코드
+데이터셋은 각 데이터셋의 라이선스와 사용 조건을 따른다. 프로젝트 문서에는 데이터셋 이름과 사용 목적을 기록하되, 재배포가 허용되지 않은 파일을 저장소에 포함하지 않는다.
 
-## Git에 올리지 않는 것
+## 개인정보 및 민감 정보
 
-- 실제 이미지 파일
-  - `.jpg`
-  - `.jpeg`
-  - `.png`
-  - `.webp`
-- 실제 데이터 CSV
-  - `urls.csv`
-  - `sources.csv`
-  - `labels.csv`
-  - `test_cases.csv`
-  - `features.csv`
-  - `features_test.csv`
-- preprocessing 결과
-  - `backend/datasets/processed/**`
-- raw dataset
-  - `backend/datasets/raw/**`
-  - `backend/datasets/raw_test/**`
-  - `backend/datasets/test_pairs/**`
-  - `backend/datasets/lora_oversized/images/**`
-- 로그
-  - `backend/logs/**`
-- 출력 결과
-  - `backend/outputs/**`
-- 모델 및 checkpoint
-  - `backend/models/**`
-  - `backend/checkpoints/**`
+사람 이미지가 포함된 데이터는 공개 범위와 사용 목적을 명확히 확인한다. 얼굴, 신체 이미지, 착용 이미지가 포함되므로 외부 공유 시 데이터셋 정책을 우선한다.
 
-## Git에 올릴 수 있는 것
+## 결과 공개 원칙
 
-- `*.example.csv`
-- `docs/data/*.md`
-- `backend/scripts/*.py`
-- `.gitkeep`
+실험 결과를 공개할 때는 다음을 확인한다.
 
-## 확인 방법
+- 공개 가능한 이미지인지
+- 데이터셋 라이선스가 결과 이미지 공개를 허용하는지
+- 생성 이미지가 실제 착용 사진으로 오해되지 않도록 표시했는지
+- fit confidence 분석이 실제 신체 치수 또는 정확한 사이즈 예측으로 표현되지 않았는지
 
-작업 전후로 반드시 아래 명령어를 확인한다.
+## 향후 작성 항목
 
-```bash
-git status
+- 사용 데이터셋별 라이선스 요약
+- 공개 가능한 예시 이미지 기준
+- gold set annotation 관리 권한
+- 외부 스토리지 경로 정책
