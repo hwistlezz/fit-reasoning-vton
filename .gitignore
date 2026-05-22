@@ -1,68 +1,88 @@
 # Python
 __pycache__/
-*.pyc
-.venv/
-.env
-.env.*
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# OS
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+conda-env/
+
+# IDE / OS
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db
 
-# Datasets - real data
-backend/datasets/raw/**
-backend/datasets/processed/**
-backend/datasets/raw_test/**
-backend/datasets/test_pairs/**
-backend/datasets/lora_oversized/images/**
-backend/datasets/urls/*.csv
-backend/datasets/*.csv
-backend/datasets/raw/*.csv
-backend/datasets/lora_oversized/*.csv
+# Notebooks
+.ipynb_checkpoints/
 
-# Allow example CSV files
-!backend/datasets/**/*.example.csv
+# Local environment files
+.env
+.env.*
+!.env.example
 
-# Keep dataset folder placeholders
-!backend/datasets/.gitkeep
-!backend/datasets/raw/
-!backend/datasets/raw/.gitkeep
-!backend/datasets/processed/
-!backend/datasets/processed/.gitkeep
-!backend/datasets/raw_test/
-!backend/datasets/raw_test/.gitkeep
-!backend/datasets/urls/
-!backend/datasets/urls/.gitkeep
-!backend/datasets/test_pairs/
-!backend/datasets/test_pairs/.gitkeep
-!backend/datasets/lora_oversized/
-!backend/datasets/lora_oversized/.gitkeep
-!backend/datasets/lora_oversized/images/
-!backend/datasets/lora_oversized/images/.gitkeep
+# Datasets and local data
+data/*
+!data/.gitkeep
+datasets/
+external_datasets/
+viton-hd/
+VITON-HD/
+dresscode/
+DressCode/
 
-# Images
-*.jpg
-*.jpeg
-*.png
-*.webp
+# External VTON repository references
+external/
+third_party/
+CatVTON/
+catvton/
+CatVTON-main/
+catvton-main/
+IDM-VTON/
+idm-vton/
+IDM-VTON-main/
+idm-vton-main/
 
-# Models / checkpoints
-backend/models/**
-backend/checkpoints/**
+# Model checkpoints and weights
+checkpoints/
+ckpts/
+weights/
+model_weights/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.onnx
 
-!backend/models/
-!backend/models/.gitkeep
-!backend/models/dwpose/
-!backend/models/dwpose/.gitkeep
-!backend/models/schp/
-!backend/models/schp/.gitkeep
+# Generated outputs
+outputs/*
+!outputs/.gitkeep
+results/
+generated/
+renders/
+overlays/
 
-# Outputs / logs
-backend/outputs/**
-backend/logs/**
+# Logs and experiment artifacts
+logs/
+wandb/
+mlruns/
+tensorboard/
 *.log
 
-!backend/outputs/
-!backend/outputs/.gitkeep
-!backend/logs/
-!backend/logs/.gitkeep
+# Archives and large binary artifacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
