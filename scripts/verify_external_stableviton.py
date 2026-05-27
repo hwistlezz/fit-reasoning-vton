@@ -2,7 +2,7 @@ import argparse
 import importlib
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, Tuple
 
 
 DEFAULT_STABLEVITON_ROOT = r"D:\GitHub\StableVITON"
@@ -25,8 +25,10 @@ DATA_TEST_DIRS = [
     "test/agnostic-v3.2",
     "test/agnostic-mask",
     "test/cloth",
-    "test/cloth_mask",
+    "test/cloth-mask",
 ]
+
+PAIR_LIST_FILE = "test_pairs.txt"
 
 OPTIONAL_IMPORTS = [
     ("torch", "torch"),
@@ -126,25 +128,74 @@ def check_checkpoints(root: Path) -> bool:
     return all_ready
 
 
-def check_data_root(data_root: Path) -> bool:
-    all_ready = True
+def display_data_path(relative_path: str) -> str:
+    return str(Path("DATA") / "zalando-hd-resized" / relative_path)
 
-    if data_root.is_dir():
+
+def sample_names(paths: list[Path], limit: int = 3) -> str:
+    return ", ".join(path.name for path in paths[:limit])
+
+
+def list_immediate_files(path: Path) -> list[Path]:
+    return sorted([child for child in path.iterdir() if child.is_file()], key=lambda item: item.name)
+
+
+def check_pair_list(data_root: Path) -> bool:
+    pair_path = data_root / PAIR_LIST_FILE
+    display_path = display_data_path(PAIR_LIST_FILE)
+    if not pair_path.is_file():
+        print_status("MISSING", display_path)
+        return False
+
+    lines = [line.strip() for line in pair_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not lines:
+        print_status("EMPTY", display_path)
+        return False
+
+    invalid_lines = [line for line in lines if len(line.split()) != 2]
+    if invalid_lines:
+        print_status("INVALID", display_path, f"{len(invalid_lines)} invalid lines")
+        return False
+
+    samples = [f"{parts[0]} -> {parts[1]}" for parts in (line.split() for line in lines[:3])]
+    print_status("OK", display_path, f"{len(lines)} pairs; samples: {', '.join(samples)}")
+    return True
+
+
+def check_data_dir(data_root: Path, relative_path: str) -> bool:
+    path = data_root / relative_path
+    display_path = display_data_path(relative_path)
+    if not path.is_dir():
+        print_status("MISSING", display_path)
+        return False
+
+    files = list_immediate_files(path)
+    if not files:
+        print_status("EMPTY", display_path)
+        return False
+
+    print_status("OK", display_path, f"{len(files)} files; samples: {sample_names(files)}")
+    return True
+
+
+def check_data_root(data_root: Path) -> str:
+    data_root_exists = data_root.is_dir()
+
+    if data_root_exists:
         print_status("OK", "data root", str(data_root))
     else:
         print_status("MISSING", "data root", str(data_root))
-        all_ready = False
 
+    pair_ready = check_pair_list(data_root)
+    dirs_ready = True
     for relative_path in DATA_TEST_DIRS:
-        path = data_root / relative_path
-        display_path = str(Path("DATA") / "zalando-hd-resized" / relative_path)
-        if path.is_dir():
-            print_status("OK", display_path)
-        else:
-            print_status("MISSING", display_path)
-            all_ready = False
+        dirs_ready = check_data_dir(data_root, relative_path) and dirs_ready
 
-    return all_ready
+    if not data_root_exists:
+        return "pending"
+    if pair_ready and dirs_ready:
+        return "ready"
+    return "partial"
 
 
 def get_version(module: object) -> str:
@@ -164,12 +215,12 @@ def check_imports(imports: Iterable[Tuple[str, str]]) -> bool:
     return all_ready
 
 
-def print_summary(repo_ready: bool, checkpoints_ready: bool, data_ready: bool, imports_ready: bool | None) -> None:
+def print_summary(repo_ready: bool, checkpoints_ready: bool, data_state: str, imports_ready: bool | None) -> None:
     print()
     print("Summary:")
     print(f"- external repo: {'ready' if repo_ready else 'missing'}")
     print(f"- checkpoints: {'ready' if checkpoints_ready else 'pending'}")
-    print(f"- data root: {'ready' if data_ready else 'pending'}")
+    print(f"- data root: {data_state}")
     if imports_ready is not None:
         print(f"- imports: {'ready' if imports_ready else 'failed'}")
 
@@ -181,13 +232,13 @@ def main() -> int:
 
     repo_ready, required_result = check_required_repo(stableviton_root)
     checkpoints_ready = check_checkpoints(stableviton_root)
-    data_ready = check_data_root(data_root)
+    data_state = check_data_root(data_root)
 
     imports_ready = None
     if args.check_imports:
         imports_ready = check_imports(OPTIONAL_IMPORTS)
 
-    print_summary(repo_ready, checkpoints_ready, data_ready, imports_ready)
+    print_summary(repo_ready, checkpoints_ready, data_state, imports_ready)
 
     if not required_result["root"] or not required_result["inference"] or not required_result["config"]:
         return 1

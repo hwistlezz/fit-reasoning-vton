@@ -84,22 +84,33 @@ Summary:
 
 ## VITON-HD Test Data Structure
 
+`configs/VITONHD.yaml` uses `dataset_name: VITONHDDataset`.
+
+`dataset.py` reads `test_pairs.txt` from the data root and uses the `test` split during inference.
+
 StableVITON inference requires the following local data structure.
 
 ```text
 DATA/zalando-hd-resized/
+  test_pairs.txt
   test/
     image/
     image-densepose/
     agnostic-v3.2/
     agnostic-mask/
     cloth/
-    cloth_mask/
+    cloth-mask/
 ```
 
 The current pending item is `D:\GitHub\StableVITON\DATA\zalando-hd-resized`.
 
 See [VITON-HD Test Data Setup](../setup/vitonhd_test_data_setup.md).
+
+## Next Step: VITON-HD Test Data Setup
+
+Checkpoints and dependencies are ready. The remaining bottleneck is the VITON-HD test data structure.
+
+Prepare the test data according to the StableVITON `dataset.py` requirements, then run the dry-run wrapper again. Actual CLI inference should be executed with `run_stableviton_smoke.py --execute` only after the data root is reported as ready.
 
 ## Planned Inference Command
 
