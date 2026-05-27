@@ -14,21 +14,30 @@ StableVITON/
 IDM-VTON/
 CatVTON/
 
-# Datasets
-backend/datasets/raw/*
-backend/datasets/processed/*
-backend/datasets/raw_test/*
-backend/datasets/*.csv
+# Dataset image/data artifacts
+backend/datasets/**/*.jpg
+backend/datasets/**/*.jpeg
+backend/datasets/**/*.png
+backend/datasets/**/*.webp
+backend/datasets/**/*.bmp
+backend/datasets/**/*.csv
 
-!backend/datasets/.gitkeep
-!backend/datasets/raw/.gitkeep
-!backend/datasets/processed/.gitkeep
-!backend/datasets/raw_test/.gitkeep
+# Allow example CSV files
+!backend/datasets/**/*.example.csv
+
+# Keep dataset folder placeholders
+!backend/datasets/**/.gitkeep
+
+# Image artifacts
+*.jpg
+*.jpeg
+*.png
+*.webp
 
 # Models / checkpoints
 checkpoints/
-backend/models/*
-backend/checkpoints/*
+backend/models/**
+backend/checkpoints/**
 *.ckpt
 *.pth
 *.pt
@@ -36,19 +45,28 @@ backend/checkpoints/*
 *.onnx
 *.pkl
 
+!backend/models/
 !backend/models/.gitkeep
 !backend/models/dwpose/
 !backend/models/dwpose/.gitkeep
 !backend/models/schp/
 !backend/models/schp/.gitkeep
 
-# Outputs / logs
+# Backend generated outputs / logs
 backend/outputs/**
+!backend/outputs/
+!backend/outputs/.gitkeep
+
 backend/logs/**
+!backend/logs/
+!backend/logs/.gitkeep
+
 *.log
 
-!backend/outputs/.gitkeep
-!backend/logs/.gitkeep
+# Root generated outputs
+outputs/**
+!outputs/
+!outputs/.gitkeep
 
 # Hugging Face / cache
 hf-cache/
