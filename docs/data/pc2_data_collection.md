@@ -2,7 +2,7 @@
 
 ## 목적
 
-PC2에서 MVP에 필요한 raw image 후보를 수집하고, preprocessing / StableVITON demo pair / oversized LoRA / low confidence case 용도로 분류한다.
+PC2에서 MVP에 필요한 raw image 후보를 수집하고, preprocessing / StableVITON demo pair / fit analyzer feature / low confidence case 용도로 분류한다.
 
 ## GitHub에 올리는 파일
 
@@ -31,7 +31,7 @@ PC2에서 MVP에 필요한 raw image 후보를 수집하고, preprocessing / Sta
 | demo person | `backend/datasets/raw/demo_person/` |
 | demo cloth | `backend/datasets/raw/demo_cloth/` |
 | StableVITON test pair | `backend/datasets/test_pairs/` |
-| LoRA usable image | `backend/datasets/lora_oversized/images/` |
+| fit analyzer feature 후보 | `backend/datasets/raw/fit_feature_candidates/` |
 
 ## 권장 흐름
 

@@ -14,7 +14,9 @@ User Input
 -> Pose Estimation, DWPose
 -> Human Parsing, SCHP
 -> StableVITON Inference
--> Fit Analyzer
+-> Result Image Generation
+-> Fit Feature Extraction
+-> Fit Classification
 -> Confidence Scoring
 -> Fit Reasoning
 -> Web UI Visualization
@@ -29,7 +31,10 @@ User Input
 - 의류 이미지 업로드
 - 키 / 몸무게 / 평소 사이즈 입력
 - job status polling
-- result image, confidence score, fit explanation 표시
+- result image, confidence badge, fit label, fit score detail 표시
+- 자연어 fit explanation 표시
+- low confidence warning 표시
+- hotspot marker 표시
 
 ### Backend API
 
@@ -40,6 +45,11 @@ User Input
 - `/api/job/{job_id}`
 - `/api/result/{job_id}`
 - output path: `backend/outputs/`
+- `backend/outputs/{job_id}/result.png`
+- `backend/outputs/{job_id}/result.json`
+- `backend/outputs/{job_id}/fit.json`
+- `backend/outputs/{job_id}/confidence.json`
+- annotations 배열 반환
 
 ### StableVITON Service
 
@@ -52,9 +62,11 @@ User Input
 
 - PC2에서 DWPose pose extraction 수행
 - PC2에서 SCHP human parsing 수행
+- AIHub "쉐이프리스 의류 및 포즈 데이터"를 fit analyzer / keypoint / segmentation / confidence scoring 기준 설계에 활용
 - input quality check 수행
 - fit feature extraction 수행
-- `datasets/raw`, `datasets/processed`, `datasets/features.csv`를 작업 경로로 사용
+- `datasets/raw`, `datasets/processed`, `datasets/features.csv`, `datasets/test_cases.csv`를 작업 경로로 사용
+- failure case 후보와 hotspot annotation 후보 생성
 
 ### Fit Analyzer
 
@@ -66,6 +78,19 @@ User Input
 - 착장 결과 왜곡 여부
 
 위 feature를 기반으로 fit label, confidence score, warning, 자연어 explanation을 생성한다.
+
+### PC3 Evaluation
+
+- PC1 StableVITON API가 최소 동작한 뒤 batch evaluation 수행
+- StableVITON 대량 inference 결과 평가
+- failure case 수집
+- low confidence case 수집
+- fit analyzer threshold 실험
+- confidence scoring 실험
+- 시간이 남을 경우에만 IDM-VTON 등 대체 VTON 모델 비교 실험
+- LoRA는 한 달 MVP에서 제외하고, 7개월 고도화 단계에서 fit control 필요성이 명확할 때만 선택적으로 검토
+
+PC3 실험 결과는 `outputs/experiments/` 아래에 정리하되 실제 output, generated image, dataset, checkpoint는 git에 커밋하지 않는다.
 
 ## Backend Folder 계획
 
@@ -104,6 +129,13 @@ backend/
     raw/
     processed/
   outputs/
+    experiments/
+      stableviton_batch/
+      failure_cases/
+      low_confidence_cases/
+      fit_threshold_tests/
+      confidence_tests/
+      idm_test/
   logs/
   models/
 ```
@@ -117,5 +149,9 @@ backend/
 - dataset을 커밋하지 않는다.
 - generated image를 커밋하지 않는다.
 - UI screenshot을 커밋하지 않는다.
+- AIHub 원본 이미지, annotation, JSON 파일은 공개 GitHub에 업로드하지 않는다.
+- AIHub 원본 데이터를 외부에 공유하지 않는다.
+- 공개 저장소에는 schema, example CSV, 문서만 포함한다.
+- 데이터 출처를 README 또는 발표자료에 명시한다.
 - fake result를 작성하지 않는다.
 - README에 결과 이미지나 benchmark처럼 보이는 성능 수치를 추가하지 않는다.

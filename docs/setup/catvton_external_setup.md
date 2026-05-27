@@ -2,7 +2,7 @@
 
 ## 목적
 
-이 문서는 CatVTON을 본 저장소에 복사하지 않고 외부 저장소로 관리하기 위한 설정 절차를 정리한다. 수정된 프로젝트 계획에서 CatVTON은 main baseline이 아니라 optional comparison baseline이다. 현재 단계의 목표는 필요 시 CatVTON smoke test를 수행할 수 있도록 외부 참조 방식과 재현성 기록 항목을 정리하는 것이다.
+이 문서는 CatVTON을 본 저장소에 복사하지 않고 외부 저장소로 관리하기 위한 설정 절차를 정리한다. 수정된 프로젝트 계획에서 CatVTON은 optional comparison baseline이다. 현재 단계의 목표는 필요 시 CatVTON smoke test를 수행할 수 있도록 외부 참조 방식과 재현성 기록 항목을 정리하는 것이다.
 
 ## CatVTON을 외부 저장소로 관리하는 이유
 
@@ -26,6 +26,7 @@ CatVTON 공식 저장소 기준 라이선스는 Creative Commons BY-NC-SA 4.0으
 ```text
 workspace/
   fit-reasoning-vton/
+  StableVITON/
   IDM-VTON/
   CatVTON/
   datasets/
@@ -33,7 +34,7 @@ workspace/
     DressCode/
 ```
 
-`fit-reasoning-vton/`은 본 저장소이고, `IDM-VTON/`은 main baseline, `CatVTON/`은 optional comparison baseline을 별도로 clone한 위치이다. `datasets/`는 원본 데이터셋을 두는 로컬 경로이며 GitHub에 커밋하지 않는다.
+`fit-reasoning-vton/`은 본 저장소이고, `StableVITON/`은 MVP main VTON backbone, `IDM-VTON/`과 `CatVTON/`은 optional VTON comparison을 위해 별도로 clone할 수 있는 위치이다. `datasets/`는 원본 데이터셋을 두는 로컬 경로이며 GitHub에 커밋하지 않는다.
 
 ## CatVTON Clone
 

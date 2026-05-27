@@ -18,10 +18,17 @@ data/
     sample_pairs.csv
 
 outputs/
-  idm_vton/
+  stableviton/
     run_YYYYMMDD_HHMM/
       generated/
       logs/
+  experiments/
+    stableviton_batch/
+    failure_cases/
+    low_confidence_cases/
+    fit_threshold_tests/
+    confidence_tests/
+    idm_test/
   catvton/
     run_YYYYMMDD_HHMM/
       generated/
@@ -43,8 +50,8 @@ outputs/
 | `sample_id` | 샘플 고유 ID |
 | `person_image_path` | person image 경로 |
 | `garment_image_path` | garment image 경로 |
-| `main_baseline_output_path` | IDM-VTON 생성 결과 경로 |
-| `comparison_baseline_output_path` | CatVTON 생성 결과 경로 |
+| `stableviton_output_path` | StableVITON 생성 결과 경로 |
+| `optional_comparison_output_path` | IDM-VTON 또는 CatVTON 생성 결과 경로 |
 | `real_target_image_path` | real paired target이 있는 경우의 경로 |
 | `dataset_name` | 직접 촬영, VITON-HD, DressCode 등 |
 | `split` | demo, validation, test 등 |
@@ -52,7 +59,7 @@ outputs/
 
 ## Real Target과 Pseudo Target 구분
 
-`real_target_image_path`는 실제 착용 이미지이고, baseline output 경로는 모델이 생성한 pseudo target이다. 두 경로를 하나의 `target` 필드로 합치지 않는다.
+`real_target_image_path`는 실제 착용 이미지이고, VTON output 경로는 모델이 생성한 pseudo target이다. 두 경로를 하나의 `target` 필드로 합치지 않는다.
 
 ## 향후 작성 항목
 

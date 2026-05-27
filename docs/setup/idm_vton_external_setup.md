@@ -2,7 +2,7 @@
 
 ## 목적
 
-IDM-VTON은 이번 텀프로젝트의 main virtual try-on baseline이다. 본 저장소는 IDM-VTON 자체를 포함하지 않고, 외부 경로에 clone한 IDM-VTON을 실행 대상으로 참조한다.
+IDM-VTON은 이번 텀프로젝트의 MVP 제품 flow에 통합하지 않는다. 본 저장소는 IDM-VTON 자체를 포함하지 않고, 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험 대상으로 외부 경로에 clone한 IDM-VTON을 참조한다.
 
 ## 외부 경로 원칙
 
@@ -66,7 +66,7 @@ IDM-VTON의 코드, checkpoint, demo 자료는 원 저장소의 라이선스와 
 
 ## Smoke Test 목표
 
-Phase 1에서 확인할 항목은 다음과 같다.
+IDM-VTON optional comparison을 진행할 때 확인할 항목은 다음과 같다.
 
 - 외부 IDM-VTON 경로가 존재하는지
 - README와 실행 관련 파일이 있는지

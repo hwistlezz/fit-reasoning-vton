@@ -2,7 +2,7 @@
 
 ## 현재 범위
 
-이번 텀프로젝트의 필수 목표는 fine-tuning 데이터셋 구축이 아니다. 메인 목표는 IDM-VTON을 main baseline으로 실행하고, 그 결과를 해석하는 Fit-aware Reasoning Layer와 웹 데모를 만드는 것이다.
+이번 텀프로젝트의 필수 목표는 fine-tuning 데이터셋 구축이 아니다. 메인 목표는 StableVITON을 MVP main VTON backbone으로 실행하고, 그 결과를 해석하는 Fit-aware Reasoning Layer와 웹 데모를 만드는 것이다.
 
 fine-tuning 데이터셋은 후속 캡스톤 또는 research extension에서 검토한다.
 
@@ -14,7 +14,7 @@ fine-tuning을 검토하려면 각 샘플에 다음 항목이 필요하다.
 - garment image
 - real target image of the person wearing the garment
 
-real target image는 실제 정답 이미지로 취급할 수 있다. IDM-VTON 또는 CatVTON으로 생성한 pseudo target은 real target과 구분하여 저장한다.
+real target image는 실제 정답 이미지로 취급할 수 있다. StableVITON, IDM-VTON, CatVTON 등 VTON 모델로 생성한 pseudo target은 real target과 구분하여 저장한다.
 
 ## Real Target과 Pseudo Target
 

@@ -4,7 +4,7 @@
 
 팀의 새 운영 계획에 맞춰 README와 주요 문서를 StableVITON 중심 MVP 구조로 수정합니다.
 
-기존 문서에서는 IDM-VTON이 main baseline으로 표현되어 있었지만, 수정된 계획에서는 StableVITON을 MVP main backbone으로 사용하고, IDM-VTON은 PC3 비교 실험용으로 역할을 변경합니다.
+기존 문서에서는 IDM-VTON이 main baseline으로 표현되어 있었지만, 수정된 계획에서는 StableVITON을 MVP main backbone으로 사용하고, IDM-VTON은 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 역할을 변경합니다.
 
 ## 배경
 
@@ -16,7 +16,7 @@ MVP 핵심은 LoRA가 아니라 `CV 기반 fit analyzer + confidence UX + 웹 �
 
 - [ ] README의 모델 사용 방향 수정
 - [ ] StableVITON을 MVP main backbone으로 명시
-- [ ] IDM-VTON을 PC3 comparison baseline으로 변경
+- [ ] IDM-VTON을 후순위 optional VTON comparison으로 변경
 - [ ] CatVTON을 MVP 제외 또는 future optional baseline으로 정리
 - [ ] docs/project_overview.md 수정
 - [ ] docs/roadmap.md 수정

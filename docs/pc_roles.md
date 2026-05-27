@@ -44,8 +44,9 @@ PC1에서 StableVITON 외부 저장소와 checkpoint를 관리하되, 해당 파
 
 ## PC2
 
-PC2는 CV preprocessing 전용이다.
+PC2는 AIHub 데이터 기반 CV preprocessing 및 fit analyzer 데이터 구축 전용 PC이다.
 
+- AIHub "쉐이프리스 의류 및 포즈 데이터" 다운로드 및 로컬 관리
 - DWPose pose extraction
 - SCHP human parsing
 - input quality check
@@ -53,19 +54,44 @@ PC2는 CV preprocessing 전용이다.
 - `datasets/raw`
 - `datasets/processed`
 - `datasets/features.csv`
+- `datasets/test_cases.csv`
+- failure case 수집
+- contact sheet 생성
+- hotspot annotation 후보 생성
+- PC1 / PC3로 processed data 동기화
 
-PC2의 dataset, processed output, feature artifact는 저장소에 바로 커밋하지 않는다. 필요한 경우 작은 schema 또는 로그 문서만 별도로 정리한다.
+PC2는 FastAPI 메인 서버나 프론트엔드를 담당하지 않는다. AIHub 원본 이미지, annotation, JSON 파일과 processed output, feature artifact는 저장소에 바로 커밋하지 않는다. 필요한 경우 작은 schema, example CSV, 로그 문서만 별도로 정리한다.
 
 ## PC3
 
-PC3는 후순위 보조 실험용이다.
+PC3는 더 이상 LoRA 학습 전용 PC가 아니다.
 
-- oversized LoRA feasibility 실험
-- IDM-VTON 단일 inference 비교 실험
-- StableVITON vs IDM-VTON 비교 샘플 저장
+PC3는 PC1 StableVITON API가 최소 동작한 뒤 StableVITON 결과를 대량으로 평가하고, failure case와 confidence 관련 실험을 수행하는 실험 / 평가 / 분석 PC이다.
 
-PC3는 PC1 MVP 서버가 어느 정도 잡힌 뒤 진행한다.
+- StableVITON batch test
+- 대량 inference 결과 평가
+- failure case 수집
+- low confidence case 수집
+- fit analyzer threshold 실험
+- confidence scoring 실험
+- 대체 VTON 모델 비교 실험
+- 7개월 고도화용 후보 기술 정리
 
-IDM-VTON 비교 실험에서는 StableVITON 대비 설치 난이도, VRAM 사용량, inference time, 결과 품질, API 통합 난이도를 기록한다. IDM-VTON 작업이 오래 막히면 MVP 보호를 위해 중단하고 PC3를 LoRA 실험용으로 전환한다.
+PC3 실험 결과는 다음 구조를 기준으로 관리한다.
 
-LoRA는 MVP 필수 기능이 아니라 PC3에서 진행하는 후순위 feasibility 실험이다.
+```text
+outputs/
+  experiments/
+    stableviton_batch/
+    failure_cases/
+    low_confidence_cases/
+    fit_threshold_tests/
+    confidence_tests/
+    idm_test/
+```
+
+IDM-VTON은 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험이다. IDM-VTON 작업이 오래 막히면 즉시 중단하고 StableVITON batch evaluation과 fit analyzer 실험을 우선한다.
+
+LoRA는 한 달 MVP에서 제외하며, 7개월 고도화 단계에서 fit control 필요성이 명확해졌을 때 선택적으로 검토한다.
+
+실제 output, generated image, dataset, checkpoint는 git에 커밋하지 않는다.
