@@ -1,123 +1,198 @@
 import argparse
+import importlib
 import sys
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Tuple
 
 
-README_CANDIDATES = [
-    "README.md",
-    "readme.md",
+DEFAULT_STABLEVITON_ROOT = r"D:\GitHub\StableVITON"
+DEFAULT_DATA_ROOT = r"D:\GitHub\StableVITON\DATA\zalando-hd-resized"
+
+REQUIRED_REPO_FILES = [
+    ("inference.py", "inference.py"),
+    ("configs/VITONHD.yaml", "configs/VITONHD.yaml"),
 ]
 
-EXECUTION_CANDIDATES = [
-    "inference.py",
-    "infer.py",
-    "test.py",
-    "train.py",
-    "demo.py",
-    "app.py",
-    "scripts/inference.py",
-    "src/inference.py",
+CHECKPOINT_FILES = [
+    "VITONHD.ckpt",
+    "VITONHD_PBE_pose.ckpt",
+    "VITONHD_VAE_finetuning.ckpt",
 ]
 
-ENVIRONMENT_CANDIDATES = [
-    "requirements.txt",
-    "environment.yml",
-    "environment.yaml",
-    "pyproject.toml",
-    "setup.py",
-    "setup.cfg",
-    "configs",
-    "config",
+DATA_TEST_DIRS = [
+    "test/image",
+    "test/image-densepose",
+    "test/agnostic-v3.2",
+    "test/agnostic-mask",
+    "test/cloth",
+    "test/cloth_mask",
+]
+
+OPTIONAL_IMPORTS = [
+    ("torch", "torch"),
+    ("pytorch_lightning", "pytorch_lightning"),
+    ("cv2", "cv2"),
+    ("numpy", "numpy"),
+    ("albumentations", "albumentations"),
+    ("diffusers", "diffusers"),
+    ("transformers", "transformers"),
 ]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="외부 StableVITON 저장소의 기본 구조를 확인합니다."
+        description="Verify an external StableVITON repo without running inference."
     )
     parser.add_argument(
         "--stableviton-root",
-        default="../StableVITON",
-        help="외부 StableVITON 저장소 경로입니다. 기본값은 ../StableVITON 입니다.",
+        default=DEFAULT_STABLEVITON_ROOT,
+        help=f"External StableVITON repo path. Default: {DEFAULT_STABLEVITON_ROOT}",
+    )
+    parser.add_argument(
+        "--data-root",
+        default=DEFAULT_DATA_ROOT,
+        help=f"VITON-HD data root path. Default: {DEFAULT_DATA_ROOT}",
+    )
+    parser.add_argument(
+        "--check-imports",
+        action="store_true",
+        help="Also import torch/cv2/diffusers and related packages.",
     )
     return parser.parse_args()
 
 
-def find_existing_path(root: Path, candidates: Iterable[str]) -> Optional[Path]:
-    for relative_path in candidates:
-        candidate_path = root / relative_path
-        if candidate_path.exists():
-            return candidate_path
-    return None
+def print_status(status: str, label: str, detail: str = "") -> None:
+    if detail:
+        print(f"[{status}] {label}: {detail}")
+    else:
+        print(f"[{status}] {label}")
 
 
-def find_any_top_level_python_file(root: Path) -> Optional[Path]:
-    if not root.exists() or not root.is_dir():
-        return None
-
-    for candidate_path in sorted(root.glob("*.py")):
-        if candidate_path.is_file():
-            return candidate_path
-    return None
-
-
-def format_relative(path: Path, root: Path) -> str:
-    try:
-        return str(path.relative_to(root))
-    except ValueError:
-        return str(path)
+def file_size_text(path: Path) -> str:
+    size = path.stat().st_size
+    if size >= 1024**3:
+        return f"{size / 1024**3:.2f} GB"
+    if size >= 1024**2:
+        return f"{size / 1024**2:.2f} MB"
+    if size >= 1024:
+        return f"{size / 1024:.2f} KB"
+    return f"{size} B"
 
 
-def print_candidates(label: str, candidates: List[str]) -> None:
-    print(f"{label} 후보:", ", ".join(candidates))
+def check_required_repo(root: Path) -> Tuple[bool, Dict[str, bool]]:
+    result = {"root": False, "inference": False, "config": False}
+
+    if root.is_dir():
+        print_status("OK", "StableVITON root", str(root))
+        result["root"] = True
+    else:
+        print_status("MISSING", "StableVITON root", str(root))
+        return False, result
+
+    for key, relative_path in REQUIRED_REPO_FILES:
+        path = root / relative_path
+        if path.is_file():
+            print_status("OK", relative_path)
+            if key == "inference.py":
+                result["inference"] = True
+            elif key == "configs/VITONHD.yaml":
+                result["config"] = True
+        else:
+            print_status("MISSING", relative_path)
+
+    repo_ready = result["root"] and result["inference"] and result["config"]
+    return repo_ready, result
+
+
+def check_checkpoints(root: Path) -> bool:
+    ckpt_dir = root / "ckpts"
+    all_ready = True
+
+    if ckpt_dir.is_dir():
+        print_status("OK", "ckpts directory")
+    else:
+        print_status("MISSING", "ckpts directory")
+        all_ready = False
+
+    for filename in CHECKPOINT_FILES:
+        path = ckpt_dir / filename
+        display_path = f"ckpts/{filename}"
+        if path.is_file() and path.stat().st_size > 0:
+            print_status("OK", display_path, file_size_text(path))
+        else:
+            print_status("MISSING", display_path)
+            all_ready = False
+
+    return all_ready
+
+
+def check_data_root(data_root: Path) -> bool:
+    all_ready = True
+
+    if data_root.is_dir():
+        print_status("OK", "data root", str(data_root))
+    else:
+        print_status("MISSING", "data root", str(data_root))
+        all_ready = False
+
+    for relative_path in DATA_TEST_DIRS:
+        path = data_root / relative_path
+        display_path = str(Path("DATA") / "zalando-hd-resized" / relative_path)
+        if path.is_dir():
+            print_status("OK", display_path)
+        else:
+            print_status("MISSING", display_path)
+            all_ready = False
+
+    return all_ready
+
+
+def get_version(module: object) -> str:
+    return str(getattr(module, "__version__", "version unknown"))
+
+
+def check_imports(imports: Iterable[Tuple[str, str]]) -> bool:
+    all_ready = True
+    for label, module_name in imports:
+        try:
+            module = importlib.import_module(module_name)
+        except Exception as exc:  # noqa: BLE001 - import smoke test should show the concrete failure.
+            print_status("MISSING", f"import {label}", f"{type(exc).__name__}: {exc}")
+            all_ready = False
+            continue
+        print_status("OK", f"import {label}", get_version(module))
+    return all_ready
+
+
+def print_summary(repo_ready: bool, checkpoints_ready: bool, data_ready: bool, imports_ready: bool | None) -> None:
+    print()
+    print("Summary:")
+    print(f"- external repo: {'ready' if repo_ready else 'missing'}")
+    print(f"- checkpoints: {'ready' if checkpoints_ready else 'pending'}")
+    print(f"- data root: {'ready' if data_ready else 'pending'}")
+    if imports_ready is not None:
+        print(f"- imports: {'ready' if imports_ready else 'failed'}")
 
 
 def main() -> int:
     args = parse_args()
     stableviton_root = Path(args.stableviton_root).expanduser()
+    data_root = Path(args.data_root).expanduser()
 
-    print(f"확인 대상 StableVITON 경로: {stableviton_root}")
+    repo_ready, required_result = check_required_repo(stableviton_root)
+    checkpoints_ready = check_checkpoints(stableviton_root)
+    data_ready = check_data_root(data_root)
 
-    has_error = False
-    if stableviton_root.exists() and stableviton_root.is_dir():
-        print("경로 확인: 성공 - StableVITON 디렉터리가 존재합니다.")
-    else:
-        print("경로 확인: 실패 - StableVITON 디렉터리를 찾을 수 없습니다.")
-        has_error = True
+    imports_ready = None
+    if args.check_imports:
+        imports_ready = check_imports(OPTIONAL_IMPORTS)
 
-    readme_file = find_existing_path(stableviton_root, README_CANDIDATES)
-    if readme_file and readme_file.is_file():
-        print(f"README 확인: 성공 - {format_relative(readme_file, stableviton_root)}")
-    else:
-        print("README 확인: 실패 - README.md 파일을 찾을 수 없습니다.")
-        print_candidates("README", README_CANDIDATES)
-        has_error = True
+    print_summary(repo_ready, checkpoints_ready, data_ready, imports_ready)
 
-    execution_file = find_existing_path(stableviton_root, EXECUTION_CANDIDATES)
-    if not execution_file:
-        execution_file = find_any_top_level_python_file(stableviton_root)
-
-    if execution_file:
-        print(f"실행 파일 후보 확인: 성공 - {format_relative(execution_file, stableviton_root)}")
-    else:
-        print("실행 파일 후보 확인: 주의 - 일반적인 inference/test/train 파일 후보를 찾지 못했습니다.")
-        print_candidates("실행 파일", EXECUTION_CANDIDATES)
-        has_error = True
-
-    environment_path = find_existing_path(stableviton_root, ENVIRONMENT_CANDIDATES)
-    if environment_path:
-        print(f"환경 파일 후보 확인: 성공 - {format_relative(environment_path, stableviton_root)}")
-    else:
-        print("환경 파일 후보 확인: 주의 - requirements, environment, configs 등 후보를 찾지 못했습니다.")
-        print_candidates("환경 파일", ENVIRONMENT_CANDIDATES)
-        has_error = True
-
-    if has_error:
-        print("검증 결과: 실패 - 외부 StableVITON 저장소의 기본 구조를 확인하지 못했습니다.")
+    if not required_result["root"] or not required_result["inference"] or not required_result["config"]:
         return 1
-
-    print("검증 결과: 성공 - 외부 StableVITON 저장소의 기본 구조가 확인되었습니다.")
+    if imports_ready is False:
+        return 1
     return 0
 
 

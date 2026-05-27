@@ -24,6 +24,7 @@ IDM-VTON과 CatVTON은 시간이 남을 경우에만 진행하는 optional VTON 
 - 출력: StableVITON generated image
 - 목적: MVP main VTON backbone이 최소 샘플에서 실행 가능한지 확인
 - 결과 기록: 실제 실행 후 로그 템플릿에 작성
+- 로그 문서: [StableVITON CLI Smoke Test Log - RTX 4080](stableviton_cli_smoke_test_4080_log.md)
 
 ## 실험 B. 입력 품질 평가
 
