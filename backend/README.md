@@ -1,19 +1,17 @@
 # Backend
 
-## 목적
+FastAPI backend for the Fit-aware Virtual Try-On Web Prototype.
 
-Fit-aware Virtual Try-On Web Prototype의 FastAPI backend skeleton이다.
+This backend currently provides the API skeleton, runtime directory setup, upload storage, pending Try-On job metadata, and job status/result reads. The StableVITON inference wrapper is not connected yet.
 
-현재 범위는 API 서버 뼈대, health check, CORS 설정, runtime directory 준비까지이다. StableVITON inference와 upload/job API는 아직 구현하지 않는다.
-
-## 실행 환경
+## Environment
 
 - Python 3.10
 - Conda env: `D:\conda-envs\vton`
 - FastAPI
 - Uvicorn
 
-## 설치
+## Install
 
 ```powershell
 cd D:\GitHub\fit-reasoning-vton
@@ -21,7 +19,7 @@ conda activate D:\conda-envs\vton
 python -m pip install -r backend/requirements.txt
 ```
 
-## 실행
+## Run
 
 ```powershell
 cd D:\GitHub\fit-reasoning-vton
@@ -35,7 +33,7 @@ uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 curl http://localhost:8000/api/health
 ```
 
-예상 응답:
+Example response:
 
 ```json
 {
@@ -45,23 +43,99 @@ curl http://localhost:8000/api/health
 }
 ```
 
-## 현재 범위
+## Try-On Job API
+
+`POST /api/tryon` creates a pending job and stores the uploaded input images under `backend/outputs/{job_id}/`.
+
+Because the StableVITON inference wrapper is not connected yet, the backend does not create `result.png`. The result response returns `result_image_url: null`, `confidence: null`, `fit: null`, and `annotations: []` so the frontend can handle the pending state safely.
+
+### POST /api/tryon
+
+```powershell
+curl.exe -X POST "http://127.0.0.1:8000/api/tryon" `
+  -F "person_image=@D:\path\to\person.png" `
+  -F "cloth_image=@D:\path\to\cloth.png" `
+  -F "height=175" `
+  -F "weight=70" `
+  -F "usual_size=L"
+```
+
+Example response:
+
+```json
+{
+  "job_id": "job_20260527_153000_ab12cd34",
+  "status": "pending",
+  "message": "Job created. StableVITON inference wrapper is not connected yet."
+}
+```
+
+### GET /api/job/{job_id}
+
+```powershell
+curl.exe http://127.0.0.1:8000/api/job/job_20260527_153000_ab12cd34
+```
+
+Example response:
+
+```json
+{
+  "job_id": "job_20260527_153000_ab12cd34",
+  "status": "pending",
+  "progress": 0,
+  "message": "StableVITON inference wrapper is not connected yet."
+}
+```
+
+### GET /api/result/{job_id}
+
+```powershell
+curl.exe http://127.0.0.1:8000/api/result/job_20260527_153000_ab12cd34
+```
+
+Example response:
+
+```json
+{
+  "job_id": "job_20260527_153000_ab12cd34",
+  "status": "pending",
+  "person_image_url": "/outputs/job_20260527_153000_ab12cd34/person.png",
+  "cloth_image_url": "/outputs/job_20260527_153000_ab12cd34/cloth.png",
+  "result_image_url": null,
+  "confidence": null,
+  "fit": null,
+  "annotations": [],
+  "message": "Result image is not available because StableVITON inference wrapper is not connected yet."
+}
+```
+
+## Current Scope
 
 - FastAPI app entrypoint
 - `/api/health`
-- CORS 설정
-- config 관리
-- path 관리
-- `backend/outputs` directory 생성
-- `backend/logs` directory 생성
-
-## 제외 범위
-
-- StableVITON inference 구현
-- checkpoint 추가
-- dataset 추가
-- generated image 추가
 - `/api/tryon`
 - `/api/job/{job_id}`
 - `/api/result/{job_id}`
-- frontend 구현
+- CORS setup
+- Runtime path setup
+- Static serving for `/outputs`
+- Upload image storage
+- Pending job JSON files
+
+## Excluded For Now
+
+- StableVITON inference wrapper
+- Checkpoints
+- Dataset files
+- Generated images
+- `result.png` creation
+- Fit analyzer
+- Confidence scoring
+- Frontend implementation
+
+## Repository Safety
+
+- `backend/outputs/**` must not be committed.
+- `backend/logs/**` must not be committed.
+- Checkpoints, datasets, and generated images must not be committed.
+- Only `.gitkeep` placeholders are tracked for runtime directories.
