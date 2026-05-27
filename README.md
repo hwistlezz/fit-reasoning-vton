@@ -28,6 +28,8 @@ MVP 핵심 기능은 다음과 같습니다.
 - CV 기반 fit 분석
 - confidence score 제공
 - 자연어 fit explanation 제공
+- low confidence warning 제공
+- 결과 이미지 위 hotspot annotation 제공
 - 웹 기반 인터랙티브 결과 UI 제공
 
 현재 단계는 계획 수정 및 문서화 단계입니다. StableVITON inference 성공, 성능 수치, 결과 이미지, 데모 영상은 아직 README에 기록하지 않습니다.
@@ -60,13 +62,13 @@ StableVITON 외부 저장소, checkpoint, dataset, generated image는 본 저장
 
 IDM-VTON은 MVP에 통합하지 않습니다.
 
-PR #8에서 정리한 IDM-VTON local Gradio demo smoke test 기록은 삭제하지 않고 비교 실험 자산으로 유지합니다. IDM-VTON은 PC3에서 comparison baseline으로 활용합니다.
+PR #8에서 정리한 IDM-VTON local Gradio demo smoke test 기록은 삭제하지 않고 비교 실험 자산으로 유지합니다. 다만 IDM-VTON은 MVP 제품 flow에 통합하지 않으며, 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 둡니다.
 
-PC3에서 IDM-VTON의 역할은 다음과 같습니다.
+PC3에서 IDM-VTON을 다룰 경우 역할은 다음으로 제한합니다.
 
-- 단일 inference 비교 실험
+- StableVITON batch evaluation 이후의 optional VTON comparison
 - StableVITON 대비 설치 난이도, VRAM 사용량, inference time, 결과 품질, API 통합 난이도 기록
-- IDM-VTON 작업이 오래 막히면 MVP 보호를 위해 중단하고 PC3를 LoRA 실험용으로 전환
+- IDM-VTON 작업이 오래 막히면 즉시 중단하고 StableVITON batch evaluation과 fit analyzer 실험을 우선
 
 ### CatVTON
 
@@ -74,9 +76,9 @@ CatVTON은 MVP 범위에서는 제외하며, 후속 optional baseline으로만 �
 
 ### LoRA
 
-LoRA는 MVP 필수 기능이 아니라 PC3에서 진행하는 후순위 feasibility 실험입니다.
+LoRA는 한 달 MVP에서 제외하며, 7개월 고도화 단계에서 fit control 필요성이 명확해졌을 때 선택적으로 검토합니다.
 
-PC3에서 oversized LoRA 1개를 feasibility 수준으로 검토할 수 있지만, 1개월 MVP의 핵심 기능은 `CV 기반 fit analyzer + confidence UX + 웹 데모`입니다.
+1개월 MVP의 핵심 기능은 `StableVITON 생성 이미지 + CV 기반 fit analyzer + confidence score + 자연어 fit explanation + 웹 UI`입니다.
 
 ## Fit-aware Reasoning Layer
 
@@ -100,9 +102,9 @@ Fit-aware Reasoning Layer는 StableVITON 결과를 그대로 신뢰하지 않고
 - 노트북 2: Backend 코드 개발, Git / Issue / PR 관리, PC1 / PC2 / PC3 SSH 실행 관리
 - PC1: StableVITON main inference server, FastAPI API server, demo API, batch job log
 - PC2: DWPose, SCHP, input quality check, fit feature extraction
-- PC3: IDM-VTON comparison, oversized LoRA feasibility
+- PC3: StableVITON batch evaluation, failure case collection, fit threshold experiments, confidence scoring experiments, optional VTON comparison
 
-PC3는 PC1 MVP 서버가 어느 정도 잡힌 뒤 진행합니다.
+PC3는 PC1 StableVITON API가 최소 동작한 뒤, batch evaluation과 confidence 실험을 담당합니다.
 
 ## API 계획
 
@@ -163,11 +165,18 @@ backend/
 ## 데이터 후보
 
 - 직접 촬영한 소규모 샘플 이미지
+- AIHub "쉐이프리스 의류 및 포즈 데이터" 기반 fit analyzer / keypoint / segmentation / confidence scoring 기준 설계
 - VITON-HD 후보 검토
 - DressCode 후보 검토
 - FIT 데이터셋 기반 fit-aware scoring은 후속 검토 또는 참고 데이터셋 방향으로 유지
 
-본 저장소에는 원본 데이터셋 이미지, annotation 파일, 생성 이미지를 포함하지 않습니다.
+데이터 관리 원칙은 다음과 같습니다.
+
+- AIHub 원본 이미지, annotation, JSON 파일은 공개 GitHub에 업로드하지 않습니다.
+- 원본 데이터를 외부에 공유하지 않습니다.
+- 공개 저장소에는 schema, example CSV, 문서만 포함합니다.
+- 데이터 출처를 README 또는 발표자료에 명시합니다.
+- 본 저장소에는 원본 데이터셋 이미지, annotation 파일, 생성 이미지를 포함하지 않습니다.
 
 ## 현재 범위와 하지 않을 것
 
@@ -195,6 +204,7 @@ backend/
 - [StableVITON PC1 CLI smoke test log](docs/experiments/stableviton_cli_smoke_test_pc1_log.md)
 - [IDM-VTON 외부 설정](docs/setup/idm_vton_external_setup.md)
 - [IDM-VTON 4080 smoke test 로그](docs/experiments/idm_vton_smoke_test_4080_log.md)
+- [PC3 batch evaluation 계획](docs/experiments/pc3_batch_evaluation_plan.md)
 - [데이터셋 계획](docs/data/dataset_plan.md)
 - [실험 계획](docs/experiments/experiment_plan.md)
 
@@ -207,7 +217,7 @@ backend/
 
 ## Third-Party Notice
 
-본 프로젝트는 StableVITON을 MVP main VTON backbone으로 외부 참조하고, IDM-VTON을 PC3 comparison baseline으로 외부 참조합니다. CatVTON은 MVP 범위에서는 제외하며, 후속 optional baseline으로만 검토합니다.
+본 프로젝트는 StableVITON을 MVP main VTON backbone으로 외부 참조합니다. IDM-VTON은 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 외부 참조하며, CatVTON은 MVP 범위에서는 제외하고 후속 optional baseline으로만 검토합니다.
 
 외부 VTON 모델의 코드, checkpoint, demo 자료는 각 원저작자의 라이선스와 사용 조건을 확인해야 합니다. 외부 모델 코드, checkpoint, 생성 결과 이미지, 대용량 데이터셋은 본 저장소에 커밋하지 않습니다.
 
@@ -216,5 +226,7 @@ backend/
 ## Dataset Notice
 
 VITON-HD와 DressCode 데이터셋은 각 원 배포처의 라이선스와 사용 조건을 확인해야 합니다. FIT 데이터셋 기반 fit-aware scoring은 후속 검토 또는 참고 데이터셋 방향으로 유지합니다.
+
+AIHub "쉐이프리스 의류 및 포즈 데이터"는 fit analyzer, keypoint / segmentation 기준 설계, confidence scoring 실험 방향을 잡기 위한 참고 데이터로 활용합니다. 원본 이미지, annotation, JSON 파일은 공개 GitHub에 업로드하지 않고 외부에 공유하지 않습니다. 공개 저장소에는 schema, example CSV, 문서만 포함하며, 데이터 출처는 README 또는 발표자료에 명시합니다.
 
 사람 이미지가 포함될 수 있으므로 공개 범위와 사용 목적을 주의해서 관리합니다.

@@ -32,6 +32,8 @@ StableVITON으로 생성한 VTON 결과를 CV 기반 fit analyzer로 분석하�
 - CV 기반 fit 분석
 - confidence score 제공
 - 자연어 fit explanation 제공
+- low confidence warning 제공
+- hotspot annotation 제공
 - 웹 기반 인터랙티브 결과 UI 제공
 
 ## 핵심 파이프라인
@@ -42,7 +44,9 @@ User Input
 -> Pose Estimation, DWPose
 -> Human Parsing, SCHP
 -> StableVITON Inference
--> Fit Analyzer
+-> Result Image Generation
+-> Fit Feature Extraction
+-> Fit Classification
 -> Confidence Scoring
 -> Fit Reasoning
 -> Web UI Visualization
@@ -79,9 +83,9 @@ PC1에서 StableVITON inference server와 FastAPI API server를 실행하고, `/
 
 IDM-VTON은 MVP에 통합하지 않는다.
 
-PR #8에서 생성한 IDM-VTON local Gradio demo smoke test 기록은 삭제하지 않고 유지한다. IDM-VTON은 PC3에서 comparison baseline으로 활용한다.
+PR #8에서 생성한 IDM-VTON local Gradio demo smoke test 기록은 삭제하지 않고 비교 실험 자산으로 유지한다. 다만 IDM-VTON은 MVP 제품 flow에 통합하지 않으며, 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 둔다.
 
-PC3에서는 StableVITON 대비 설치 난이도, VRAM 사용량, inference time, 결과 품질, API 통합 난이도를 비교한다. IDM-VTON 작업이 오래 막히면 MVP 보호를 위해 중단하고 PC3를 LoRA 실험용으로 전환한다.
+PC3에서 IDM-VTON을 다룰 경우 StableVITON batch evaluation 이후의 optional VTON comparison으로 제한한다. IDM-VTON 작업이 오래 막히면 즉시 중단하고 StableVITON batch evaluation과 fit analyzer 실험을 우선한다.
 
 ### CatVTON
 
@@ -89,7 +93,7 @@ CatVTON은 MVP 범위에서는 제외하며, 후속 optional baseline으로만 �
 
 ### LoRA
 
-LoRA는 MVP 필수 기능이 아니라 PC3에서 진행하는 후순위 feasibility 실험이다. 가능하다면 oversized LoRA 1개만 feasibility 수준으로 검토한다.
+LoRA는 한 달 MVP에서 제외하며, 7개월 고도화 단계에서 fit control 필요성이 명확해졌을 때 선택적으로 검토한다.
 
 ## 시스템 구성
 
@@ -97,7 +101,7 @@ LoRA는 MVP 필수 기능이 아니라 PC3에서 진행하는 후순위 feasibil
 - 노트북 2: Backend 개발, Git / Issue / PR 관리, PC1 / PC2 / PC3 SSH 접속 및 실행 관리
 - PC1: StableVITON main inference server, FastAPI API server, 실제 VTON 결과 생성
 - PC2: DWPose, SCHP, input quality check, fit feature extraction
-- PC3: IDM-VTON comparison, oversized LoRA feasibility
+- PC3: StableVITON batch evaluation, failure case collection, fit threshold experiments, confidence scoring experiments, optional VTON comparison
 
 자세한 역할은 [PC / 노트북 역할](pc_roles.md)을 따른다.
 

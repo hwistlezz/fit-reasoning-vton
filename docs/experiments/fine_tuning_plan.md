@@ -2,7 +2,7 @@
 
 ## 현재 범위
 
-이번 텀프로젝트에서는 VTON 모델을 처음부터 학습하거나 CatVTON을 직접 파인튜닝하지 않는다. 우선순위는 IDM-VTON을 main baseline으로 실행하고, 생성 결과를 분석하는 Fit-aware Reasoning Layer와 웹 데모를 만드는 것이다.
+이번 텀프로젝트에서는 VTON 모델을 처음부터 학습하거나 CatVTON을 직접 파인튜닝하지 않는다. 우선순위는 StableVITON을 MVP main VTON backbone으로 실행하고, 생성 결과를 분석하는 Fit-aware Reasoning Layer와 웹 데모를 만드는 것이다.
 
 fine-tuning은 후속 캡스톤 또는 research extension에서 검토한다.
 
@@ -28,7 +28,7 @@ pseudo target은 VTON 모델이 생성한 결과이므로 real target처럼 취�
 
 ### Pseudo Target 보조 실험
 
-- IDM-VTON 또는 CatVTON pseudo target 사용 가능성을 별도 검토
+- StableVITON, IDM-VTON, CatVTON 등 VTON 모델의 pseudo target 사용 가능성을 별도 검토
 - real target 기반 학습과 분리하여 기록
 - pseudo target 오류 전파 가능성을 명시
 

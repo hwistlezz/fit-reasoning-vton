@@ -3,7 +3,9 @@
 ## Phase 0. 프로젝트 방향 전환 및 문서 정리
 
 - StableVITON 중심 MVP 방향으로 README와 주요 문서 수정
-- IDM-VTON을 PC3 comparison baseline으로 역할 변경
+- PC3를 StableVITON batch evaluation, failure case 수집, fit threshold / confidence 실험 중심으로 역할 변경
+- IDM-VTON을 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 정리
+- LoRA를 한 달 MVP에서 제외하고 7개월 고도화 optional 실험으로 이동
 - CatVTON을 MVP 범위에서 제외하고 후속 optional baseline으로 정리
 - PC1 / PC2 / PC3 / 노트북 1 / 노트북 2 역할 문서화
 - 전체 pipeline, API contract, backend 구조 계획 문서화
@@ -79,6 +81,7 @@ API response example은 실제 결과가 아니라 contract example로만 사용
 
 ## Phase 6. PC2 CV preprocessing 및 fit feature extraction
 
+- AIHub "쉐이프리스 의류 및 포즈 데이터"를 fit analyzer / keypoint / segmentation / confidence scoring 기준 설계에 활용
 - DWPose pose extraction
 - SCHP human parsing
 - input quality check
@@ -86,8 +89,11 @@ API response example은 실제 결과가 아니라 contract example로만 사용
 - `datasets/raw`
 - `datasets/processed`
 - `datasets/features.csv`
+- `datasets/test_cases.csv`
+- failure case 후보 수집
+- hotspot annotation 후보 생성
 
-dataset 파일과 generated intermediate output은 repository에 커밋하지 않는다.
+AIHub 원본 이미지, annotation, JSON 파일과 generated intermediate output은 repository에 커밋하지 않는다. 공개 저장소에는 schema, example CSV, 문서만 포함한다.
 
 ## Phase 7. Fit Analyzer, Confidence Scoring, Fit Reasoning
 
@@ -127,20 +133,28 @@ README에 결과 이미지나 성능 수치를 추가하지 않는다.
 
 output image는 repository가 아니라 ignored output path에 저장한다.
 
-## Phase 10. PC3 comparison 및 LoRA feasibility
+## Phase 10. PC3 batch evaluation 및 confidence 실험
 
-PC3 작업은 PC1 MVP 서버가 어느 정도 잡힌 뒤 진행한다.
+PC3는 PC1 StableVITON API가 최소 동작한 뒤, batch evaluation과 confidence 실험을 담당한다.
 
-- IDM-VTON 단일 inference 비교 실험
-- StableVITON vs IDM-VTON 비교 항목 정리
-- 설치 난이도, VRAM 사용량, inference time, 결과 품질, API 통합 난이도 기록
-- oversized LoRA feasibility 범위 정의
-- IDM-VTON 작업이 오래 막히면 MVP 보호를 위해 중단하고 LoRA 실험용으로 전환
+- StableVITON batch test
+- 대량 inference 결과 평가
+- failure case 수집
+- low confidence case 수집
+- fit analyzer threshold 실험
+- confidence scoring 실험
+- `outputs/experiments/stableviton_batch/` 정리
+- `outputs/experiments/failure_cases/` 정리
+- `outputs/experiments/low_confidence_cases/` 정리
+- `outputs/experiments/fit_threshold_tests/` 정리
+- `outputs/experiments/confidence_tests/` 정리
+- 시간이 남을 경우에만 IDM-VTON 등 대체 VTON 모델 비교 실험
 
-IDM-VTON과 LoRA는 MVP 핵심이 아니라 후순위 보조 실험이다.
+IDM-VTON은 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험이다. LoRA는 한 달 MVP에서 제외하며, 7개월 고도화 단계에서 fit control 필요성이 명확해졌을 때 선택적으로 검토한다.
 
 ## 후속 검토
 
 - CatVTON은 MVP 범위에서는 제외하며, 후속 optional baseline으로만 검토
 - VITON-HD / DressCode / FIT 데이터셋은 후속 검토 또는 참고 데이터셋으로 유지
+- AIHub "쉐이프리스 의류 및 포즈 데이터"는 fit analyzer와 confidence scoring 설계용으로 활용하되, 원본 데이터는 공개 저장소에 업로드하지 않음
 - FIT 데이터셋 기반 fit-aware scoring은 캡스톤 또는 research extension 방향으로 분리

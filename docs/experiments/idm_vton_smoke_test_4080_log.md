@@ -31,7 +31,7 @@ D:\GitHub
 ## 외부 IDM-VTON 정보
 
 - 사용 모델: IDM-VTON
-- 역할: main virtual try-on baseline
+- 역할: 후순위 optional VTON comparison 자산
 - 외부 저장소 경로: `D:\GitHub\IDM-VTON`
 - 외부 IDM-VTON commit hash: `0d5f3ec2d737487a9bb24e4100936ad254780383`
 
