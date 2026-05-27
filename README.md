@@ -192,6 +192,7 @@ backend/
 - [환경 설정](docs/setup/environment.md)
 - [StableVITON 외부 설정](docs/setup/stableviton_external_setup.md)
 - [StableVITON PC1 setup log template](docs/experiments/stableviton_pc1_setup_log_template.md)
+- [StableVITON PC1 CLI smoke test log](docs/experiments/stableviton_cli_smoke_test_pc1_log.md)
 - [IDM-VTON 외부 설정](docs/setup/idm_vton_external_setup.md)
 - [IDM-VTON 4080 smoke test 로그](docs/experiments/idm_vton_smoke_test_4080_log.md)
 - [데이터셋 계획](docs/data/dataset_plan.md)
