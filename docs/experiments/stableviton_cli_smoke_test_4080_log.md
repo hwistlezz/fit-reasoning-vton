@@ -22,8 +22,10 @@ Before connecting StableVITON to the FastAPI backend on PC1, verify that the ext
 - CUDA check: done
 - Dependency import check: done
 - Checkpoint download: done
-- VITON-HD test data setup: pending
-- Inference run: not started
+- Mini VITON-HD smoke data setup: done
+- DensePose image-densepose setup: done
+- StableVITON CLI inference run: done
+- Result images: 3 local files generated
 
 ## Environment
 
@@ -78,11 +80,17 @@ Checkpoints are large local assets and must not be committed to GitHub.
 Summary:
 - external repo: ready
 - checkpoints: ready
-- data root: partial
+- data root: ready
 - imports: ready
 ```
 
-The default VITON-HD test data root exists locally, but it is still partial for StableVITON because `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` are missing.
+The ready data root is the local mini smoke dataset:
+
+```text
+D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+The default VITON-HD test data root exists locally, but the official `test.zip` structure was partial for StableVITON because `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` were missing.
 
 ## VITON-HD Test Data Structure
 
@@ -132,30 +140,44 @@ The generated agnostic files are approximate smoke-test inputs based on `image-p
 
 ## Planned Inference Command
 
-Run only after the VITON-HD test data structure is ready.
+The smoke test was executed with the mini smoke data root and unpaired mode.
 
 ```powershell
-cd D:\GitHub\StableVITON
-conda activate D:\conda-envs\vton
+D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stableviton_smoke.py `
+  --stableviton-root D:\GitHub\StableVITON `
+  --data-root DATA\stableviton-smoke `
+  --unpair `
+  --execute
+```
 
-python inference.py `
+The wrapper emitted this StableVITON inference command:
+
+```powershell
+D:\conda-envs\vton\python.exe inference.py `
   --config_path .\configs\VITONHD.yaml `
   --batch_size 1 `
   --model_load_path .\ckpts\VITONHD.ckpt `
-  --data_root_dir .\DATA\zalando-hd-resized `
-  --save_dir .\samples_smoke
+  --data_root_dir .\DATA\stableviton-smoke `
+  --save_dir .\samples_smoke `
+  --denoise_steps 50 `
+  --img_H 512 `
+  --img_W 384 `
+  --unpair
 ```
 
-The safer dry-run wrapper from this repository can be used first.
+## Smoke Test Result
 
-```powershell
-cd D:\GitHub\fit-reasoning-vton
+StableVITON CLI smoke test result images were generated and checked locally.
 
-D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
-  --stableviton-root D:\GitHub\StableVITON
+Generated files:
+
+```text
+samples_smoke/unpair/00891_00_01430_00.jpg
+samples_smoke/unpair/03615_00_09933_00.jpg
+samples_smoke/unpair/08909_00_02783_00.jpg
 ```
 
-Actual inference requires `--execute` and should only be run after the data root is ready.
+The result images were not uploaded to GitHub to avoid VITON-HD dataset and generated-image license/copyright issues.
 
 ## Verification Commands
 
@@ -177,6 +199,148 @@ cd D:\GitHub\fit-reasoning-vton
 D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
   --stableviton-root D:\GitHub\StableVITON
 ```
+
+## Troubleshooting: StableVITON test data preprocessing 문제 해결
+
+### 문제 상황
+
+StableVITON CLI inference를 실행하기 위해 VITON-HD 공식 Google Drive에서 `datasets/test.zip`을 다운로드했다.
+
+압축 해제 후 기본 구조는 다음과 같았다.
+
+```text
+DATA/zalando-hd-resized/
+  test_pairs.txt
+  test/
+    image/
+    cloth/
+    cloth-mask/
+    image-parse/
+    openpose-img/
+    openpose-json/
+```
+
+하지만 StableVITON `dataset.py`와 `inference.py` 구조에서 요구하는 입력은 다음과 달랐다.
+
+```text
+DATA/zalando-hd-resized/
+  test_pairs.txt
+  test/
+    image/
+    image-densepose/
+    agnostic-v3.2/
+    agnostic-mask/
+    cloth/
+    cloth-mask/
+```
+
+즉, 공식 VITON-HD 기본 `test.zip`만으로는 StableVITON inference를 바로 실행할 수 없었다.
+
+부족했던 항목은 다음과 같다.
+
+```text
+test/image-densepose
+test/agnostic-v3.2
+test/agnostic-mask
+```
+
+### 원인
+
+`VITONHD.ckpt` checkpoint 문제는 아니었다.
+
+checkpoint 3개는 정상적으로 준비되어 있었고, CUDA / PyTorch / dependency import도 통과했다.
+
+실제 문제는 StableVITON이 inference 단계에서 이미 전처리된 DensePose image, agnostic image, agnostic mask를 요구하는데, VITON-HD 기본 test data에는 해당 파일들이 포함되어 있지 않았다는 점이었다.
+
+### 해결 방법
+
+전체 VITON-HD test set을 바로 처리하지 않고, 먼저 `test_pairs.txt` 앞 3개 pair만 사용해 mini smoke dataset을 만들었다.
+
+사용한 mini smoke dataset 경로:
+
+```text
+D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+mini dataset 구조:
+
+```text
+DATA/stableviton-smoke/
+  test_pairs.txt
+  test/
+    image/
+    image-parse/
+    openpose-img/
+    openpose-json/
+    cloth/
+    cloth-mask/
+    agnostic-v3.2/
+    agnostic-mask/
+    image-densepose/
+```
+
+처리 과정은 다음과 같다.
+
+1. `prepare_stableviton_smoke_subset.py`로 VITON-HD test data에서 앞 3개 pair만 복사했다.
+2. `generate_stableviton_agnostic_from_parse.py`로 image-parse 기반 approximate `agnostic-v3.2`, `agnostic-mask`를 생성했다.
+3. WSL Ubuntu 환경에서 Detectron2 DensePose를 설치했다.
+4. DensePose `apply_net.py show`를 이용해 3개 person image에 대한 `image-densepose`를 생성했다.
+5. 생성된 DensePose output의 파일명을 StableVITON dataset loader가 찾을 수 있도록 `{person_name}.jpg` 형태로 맞췄다.
+6. `--unpair` 옵션을 사용해 StableVITON CLI smoke test를 실행했다.
+
+### 추가로 해결한 dependency 문제
+
+StableVITON inference 실행 중 다음 에러가 발생했다.
+
+```text
+ModuleNotFoundError: No module named 'cleanfid'
+```
+
+아래 명령어로 해결했다.
+
+```powershell
+D:\conda-envs\vton\python.exe -m pip install clean-fid
+```
+
+또한 다음 경고가 출력되었지만 실행을 중단시키는 문제는 아니었다.
+
+```text
+No module named 'triton'
+```
+
+### 최종 실행 명령
+
+```powershell
+D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stableviton_smoke.py `
+  --stableviton-root D:\GitHub\StableVITON `
+  --data-root DATA\stableviton-smoke `
+  --unpair `
+  --execute
+```
+
+### 실행 결과
+
+StableVITON inference가 3개 unpaired pair에 대해 정상 완료되었다.
+
+생성된 결과 파일:
+
+```text
+samples_smoke/unpair/00891_00_01430_00.jpg
+samples_smoke/unpair/03615_00_09933_00.jpg
+samples_smoke/unpair/08909_00_02783_00.jpg
+```
+
+### 주의사항
+
+이번 전처리는 smoke test 목적의 approximate preprocessing이다.
+
+특히 `agnostic-v3.2`와 `agnostic-mask`는 공식 StableVITON benchmark preprocessing과 완전히 동일하다고 볼 수 없다.
+
+따라서 이번 결과는 정량 평가용 결과가 아니라, StableVITON CLI inference가 로컬 RTX 4080 환경에서 정상 실행되는지 확인하기 위한 smoke test 결과로 기록한다.
+
+단, VITON-HD dataset 및 generated image의 라이선스/저작권 이슈를 피하기 위해 결과 이미지는 GitHub에 업로드하지 않았다.
+
+또한 checkpoint, dataset, generated image는 GitHub에 업로드하지 않는다.
 
 ## Safety Notes
 
