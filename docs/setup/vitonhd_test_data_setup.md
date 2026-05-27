@@ -174,6 +174,42 @@ This is not official StableVITON preprocessing and must only be used for CLI smo
 
 After this step, `image-densepose` is still required. Generate or copy DensePose files for the same person filenames before running actual StableVITON inference.
 
+## Mini Smoke Dataset Based Resolution
+
+The official VITON-HD default test data did not include all preprocessed data required by StableVITON inference.
+
+Missing items:
+
+```text
+image-densepose
+agnostic-v3.2
+agnostic-mask
+```
+
+For the #11 CLI smoke test, this was resolved with a mini smoke dataset:
+
+1. Copied the first 3 pairs from `test_pairs.txt`.
+2. Copied person image, `image-parse`, OpenPose result, cloth, and cloth mask files.
+3. Generated approximate `agnostic-v3.2` and `agnostic-mask` from `image-parse`.
+4. Generated `image-densepose` with WSL Ubuntu + Detectron2 DensePose.
+5. Ran StableVITON CLI with `--unpair`.
+
+This is temporary smoke-test preprocessing, not full benchmark preprocessing.
+
+Successful smoke-test data root:
+
+```text
+D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+Successful local output path:
+
+```text
+D:\GitHub\StableVITON\samples_smoke\unpair
+```
+
+Generated images are local-only and must not be uploaded to GitHub.
+
 ## PowerShell Placement Checks
 
 ```powershell

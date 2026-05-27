@@ -2,30 +2,33 @@
 
 ## Purpose
 
-Before connecting StableVITON to the FastAPI backend on PC1, verify that the external StableVITON repository can run standalone CLI inference.
+Verify that the external StableVITON repository can run standalone CLI inference on PC1 before connecting it to the FastAPI backend.
 
-## Scope
+This is a CLI smoke test, not a full VITON-HD benchmark.
 
-- Confirm external StableVITON repo clone
-- Confirm conda environment
-- Confirm CUDA / PyTorch
-- Confirm key dependency imports
-- Confirm checkpoint locations
-- Confirm VITON-HD test data structure
-- Confirm inference command
-- Record success or failure logs
+## Final Result
 
-## Current Status
+StableVITON CLI smoke test succeeded on the PC1 RTX 4080 environment.
 
-- External repo clone: done
-- Conda env creation: done
-- CUDA check: done
-- Dependency import check: done
-- Checkpoint download: done
-- Mini VITON-HD smoke data setup: done
-- DensePose image-densepose setup: done
-- StableVITON CLI inference run: done
-- Result images: 3 local files generated
+| Item | Value |
+| --- | --- |
+| Sample pairs | `3` |
+| Mode | `unpaired` |
+| Batch size | `1` |
+| Denoise steps | `50` |
+| Image size | `512 x 384` |
+| Data root | `D:\GitHub\StableVITON\DATA\stableviton-smoke` |
+| Output path | `D:\GitHub\StableVITON\samples_smoke\unpair` |
+| Total elapsed seconds | `51.6623159` |
+| Max VRAM used | `9679 MiB` (`9.45 GB`) |
+| Generated result images | `3` |
+
+The elapsed time and VRAM values are observed smoke-test measurements for a 3-pair mini dataset on PC1. They are not official benchmark numbers.
+
+Measurement files committed to this repository:
+
+- [stableviton_smoke_inference_time_4080.txt](stableviton_smoke_inference_time_4080.txt)
+- [stableviton_smoke_vram_4080.csv](stableviton_smoke_vram_4080.csv)
 
 ## Environment
 
@@ -48,19 +51,32 @@ Before connecting StableVITON to the FastAPI backend on PC1, verify that the ext
 | Transformers | `4.33.2` |
 | pip check | `No broken requirements found` |
 
-## Known Warnings
+## Preflight Result
 
-### pkg_resources deprecation warning
+The following items were checked before inference:
 
-`pytorch_lightning==1.5.0` prints a `pkg_resources` deprecation warning.
+- StableVITON root
+- `inference.py`
+- `configs/VITONHD.yaml`
+- `ckpts/VITONHD.ckpt`
+- `DATA\stableviton-smoke`
+- `test_pairs.txt`: 3 pairs
+- `test\image`
+- `test\image-densepose`
+- `test\agnostic-v3.2`
+- `test\agnostic-mask`
+- `test\cloth`
+- `test\cloth-mask`
 
-This is not an import failure, so it does not block the smoke test.
+Verification summary:
 
-### Triton warning
-
-The Windows environment prints a `triton` warning during dependency checks.
-
-This is not a `diffusers` import failure, so it does not block the smoke test.
+```text
+Summary:
+- external repo: ready
+- checkpoints: ready
+- data root: ready
+- imports: ready
+```
 
 ## Checkpoint Status
 
@@ -72,36 +88,22 @@ The following checkpoints are placed locally under `D:\GitHub\StableVITON\ckpts`
 | `VITONHD_PBE_pose.ckpt` | done | about 6.85 GB |
 | `VITONHD_VAE_finetuning.ckpt` | done | about 376 MB |
 
-Checkpoints are large local assets and must not be committed to GitHub.
+Checkpoints are local assets and must not be committed to GitHub.
 
-## Current Verification Result
+## StableVITON Dataset Requirements
 
-```text
-Summary:
-- external repo: ready
-- checkpoints: ready
-- data root: ready
-- imports: ready
+`configs/VITONHD.yaml` uses:
+
+```yaml
+dataset_name: VITONHDDataset
 ```
-
-The ready data root is the local mini smoke dataset:
-
-```text
-D:\GitHub\StableVITON\DATA\stableviton-smoke
-```
-
-The default VITON-HD test data root exists locally, but the official `test.zip` structure was partial for StableVITON because `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` were missing.
-
-## VITON-HD Test Data Structure
-
-`configs/VITONHD.yaml` uses `dataset_name: VITONHDDataset`.
 
 `dataset.py` reads `test_pairs.txt` from the data root and uses the `test` split during inference.
 
-StableVITON inference requires the following local data structure.
+The StableVITON inference structure is:
 
 ```text
-DATA/zalando-hd-resized/
+DATA/{data_root}/
   test_pairs.txt
   test/
     image/
@@ -112,157 +114,27 @@ DATA/zalando-hd-resized/
     cloth-mask/
 ```
 
-The current pending item is `D:\GitHub\StableVITON\DATA\zalando-hd-resized`.
+The official VITON-HD `test.zip` does not include every StableVITON-specific input. The missing preprocessing artifacts were handled with a mini smoke dataset.
 
 See [VITON-HD Test Data Setup](../setup/vitonhd_test_data_setup.md).
 
-## Next Step: VITON-HD Test Data Setup
+## Mini Smoke Dataset
 
-Checkpoints and dependencies are ready. The remaining bottleneck is the VITON-HD test data structure.
-
-Prepare the test data according to the StableVITON `dataset.py` requirements, then run the dry-run wrapper again. Actual CLI inference should be executed with `run_stableviton_smoke.py --execute` only after the data root is reported as ready.
-
-The default VITON-HD `test.zip` may not include the StableVITON-specific `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` inputs. For the first smoke test, use a mini local subset:
-
-```powershell
-cd D:\GitHub\fit-reasoning-vton
-
-D:\conda-envs\vton\python.exe .\scripts\prepare_stableviton_smoke_subset.py `
-  --source-root D:\GitHub\StableVITON\DATA\zalando-hd-resized `
-  --target-root D:\GitHub\StableVITON\DATA\stableviton-smoke `
-  --num-samples 3
-
-D:\conda-envs\vton\python.exe .\scripts\generate_stableviton_agnostic_from_parse.py `
-  --data-root D:\GitHub\StableVITON\DATA\stableviton-smoke
-```
-
-The generated agnostic files are approximate smoke-test inputs based on `image-parse`; they are not official StableVITON preprocessing outputs. DensePose files still need to be prepared separately before actual inference.
-
-## Planned Inference Command
-
-The smoke test was executed with the mini smoke data root and unpaired mode.
-
-```powershell
-D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stableviton_smoke.py `
-  --stableviton-root D:\GitHub\StableVITON `
-  --data-root DATA\stableviton-smoke `
-  --unpair `
-  --execute
-```
-
-The wrapper emitted this StableVITON inference command:
-
-```powershell
-D:\conda-envs\vton\python.exe inference.py `
-  --config_path .\configs\VITONHD.yaml `
-  --batch_size 1 `
-  --model_load_path .\ckpts\VITONHD.ckpt `
-  --data_root_dir .\DATA\stableviton-smoke `
-  --save_dir .\samples_smoke `
-  --denoise_steps 50 `
-  --img_H 512 `
-  --img_W 384 `
-  --unpair
-```
-
-## Smoke Test Result
-
-StableVITON CLI smoke test result images were generated and checked locally.
-
-Generated files:
-
-```text
-samples_smoke/unpair/00891_00_01430_00.jpg
-samples_smoke/unpair/03615_00_09933_00.jpg
-samples_smoke/unpair/08909_00_02783_00.jpg
-```
-
-The result images were not uploaded to GitHub to avoid VITON-HD dataset and generated-image license/copyright issues.
-
-## Verification Commands
-
-External repo, checkpoint, data, and import check:
-
-```powershell
-cd D:\GitHub\fit-reasoning-vton
-
-D:\conda-envs\vton\python.exe .\scripts\verify_external_stableviton.py `
-  --stableviton-root D:\GitHub\StableVITON `
-  --check-imports
-```
-
-Smoke command dry-run:
-
-```powershell
-cd D:\GitHub\fit-reasoning-vton
-
-D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
-  --stableviton-root D:\GitHub\StableVITON
-```
-
-## Troubleshooting: StableVITON test data preprocessing 문제 해결
-
-### 문제 상황
-
-StableVITON CLI inference를 실행하기 위해 VITON-HD 공식 Google Drive에서 `datasets/test.zip`을 다운로드했다.
-
-압축 해제 후 기본 구조는 다음과 같았다.
-
-```text
-DATA/zalando-hd-resized/
-  test_pairs.txt
-  test/
-    image/
-    cloth/
-    cloth-mask/
-    image-parse/
-    openpose-img/
-    openpose-json/
-```
-
-하지만 StableVITON `dataset.py`와 `inference.py` 구조에서 요구하는 입력은 다음과 달랐다.
-
-```text
-DATA/zalando-hd-resized/
-  test_pairs.txt
-  test/
-    image/
-    image-densepose/
-    agnostic-v3.2/
-    agnostic-mask/
-    cloth/
-    cloth-mask/
-```
-
-즉, 공식 VITON-HD 기본 `test.zip`만으로는 StableVITON inference를 바로 실행할 수 없었다.
-
-부족했던 항목은 다음과 같다.
-
-```text
-test/image-densepose
-test/agnostic-v3.2
-test/agnostic-mask
-```
-
-### 원인
-
-`VITONHD.ckpt` checkpoint 문제는 아니었다.
-
-checkpoint 3개는 정상적으로 준비되어 있었고, CUDA / PyTorch / dependency import도 통과했다.
-
-실제 문제는 StableVITON이 inference 단계에서 이미 전처리된 DensePose image, agnostic image, agnostic mask를 요구하는데, VITON-HD 기본 test data에는 해당 파일들이 포함되어 있지 않았다는 점이었다.
-
-### 해결 방법
-
-전체 VITON-HD test set을 바로 처리하지 않고, 먼저 `test_pairs.txt` 앞 3개 pair만 사용해 mini smoke dataset을 만들었다.
-
-사용한 mini smoke dataset 경로:
+The mini smoke dataset path is:
 
 ```text
 D:\GitHub\StableVITON\DATA\stableviton-smoke
 ```
 
-mini dataset 구조:
+It was prepared from the first 3 pairs in `test_pairs.txt`:
+
+```text
+08909_00.jpg -> 02783_00.jpg
+00891_00.jpg -> 01430_00.jpg
+03615_00.jpg -> 09933_00.jpg
+```
+
+The mini dataset includes:
 
 ```text
 DATA/stableviton-smoke/
@@ -279,36 +151,13 @@ DATA/stableviton-smoke/
     image-densepose/
 ```
 
-처리 과정은 다음과 같다.
+`agnostic-v3.2` and `agnostic-mask` were generated with approximate smoke-test preprocessing from `image-parse`. These are not official StableVITON benchmark preprocessing outputs.
 
-1. `prepare_stableviton_smoke_subset.py`로 VITON-HD test data에서 앞 3개 pair만 복사했다.
-2. `generate_stableviton_agnostic_from_parse.py`로 image-parse 기반 approximate `agnostic-v3.2`, `agnostic-mask`를 생성했다.
-3. WSL Ubuntu 환경에서 Detectron2 DensePose를 설치했다.
-4. DensePose `apply_net.py show`를 이용해 3개 person image에 대한 `image-densepose`를 생성했다.
-5. 생성된 DensePose output의 파일명을 StableVITON dataset loader가 찾을 수 있도록 `{person_name}.jpg` 형태로 맞췄다.
-6. `--unpair` 옵션을 사용해 StableVITON CLI smoke test를 실행했다.
+`image-densepose` was generated with WSL Ubuntu + Detectron2 DensePose and renamed so the StableVITON dataset loader could find `{person_name}.jpg`.
 
-### 추가로 해결한 dependency 문제
+## Execution Command
 
-StableVITON inference 실행 중 다음 에러가 발생했다.
-
-```text
-ModuleNotFoundError: No module named 'cleanfid'
-```
-
-아래 명령어로 해결했다.
-
-```powershell
-D:\conda-envs\vton\python.exe -m pip install clean-fid
-```
-
-또한 다음 경고가 출력되었지만 실행을 중단시키는 문제는 아니었다.
-
-```text
-No module named 'triton'
-```
-
-### 최종 실행 명령
+The smoke test was executed through the repository wrapper:
 
 ```powershell
 D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stableviton_smoke.py `
@@ -318,11 +167,26 @@ D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stablevit
   --execute
 ```
 
-### 실행 결과
+The wrapper emitted this StableVITON command:
 
-StableVITON inference가 3개 unpaired pair에 대해 정상 완료되었다.
+```powershell
+D:\conda-envs\vton\python.exe inference.py `
+  --config_path .\configs\VITONHD.yaml `
+  --batch_size 1 `
+  --model_load_path .\ckpts\VITONHD.ckpt `
+  --data_root_dir .\DATA\stableviton-smoke `
+  --save_dir .\samples_smoke `
+  --denoise_steps 50 `
+  --img_H 512 `
+  --img_W 384 `
+  --unpair
+```
 
-생성된 결과 파일:
+## Generated Result Files
+
+StableVITON CLI smoke test result images were generated and checked locally.
+
+Generated files:
 
 ```text
 samples_smoke/unpair/00891_00_01430_00.jpg
@@ -330,17 +194,134 @@ samples_smoke/unpair/03615_00_09933_00.jpg
 samples_smoke/unpair/08909_00_02783_00.jpg
 ```
 
-### 주의사항
+Latest local file sizes:
 
-이번 전처리는 smoke test 목적의 approximate preprocessing이다.
+| File | Size |
+| --- | ---: |
+| `00891_00_01430_00.jpg` | `33206 bytes` |
+| `03615_00_09933_00.jpg` | `40695 bytes` |
+| `08909_00_02783_00.jpg` | `49030 bytes` |
 
-특히 `agnostic-v3.2`와 `agnostic-mask`는 공식 StableVITON benchmark preprocessing과 완전히 동일하다고 볼 수 없다.
+The result images were not uploaded to GitHub to avoid VITON-HD dataset and generated-image license/copyright issues.
 
-따라서 이번 결과는 정량 평가용 결과가 아니라, StableVITON CLI inference가 로컬 RTX 4080 환경에서 정상 실행되는지 확인하기 위한 smoke test 결과로 기록한다.
+## Inference Time
 
-단, VITON-HD dataset 및 generated image의 라이선스/저작권 이슈를 피하기 위해 결과 이미지는 GitHub에 업로드하지 않았다.
+The run was measured with:
 
-또한 checkpoint, dataset, generated image는 GitHub에 업로드하지 않는다.
+```powershell
+$elapsed = Measure-Command {
+  D:\conda-envs\vton\python.exe D:\GitHub\fit-reasoning-vton\scripts\run_stableviton_smoke.py --stableviton-root D:\GitHub\StableVITON --data-root DATA\stableviton-smoke --unpair --execute
+}
+
+"Elapsed seconds: $($elapsed.TotalSeconds)" | Tee-Object -FilePath D:\GitHub\fit-reasoning-vton\docs\experiments\stableviton_smoke_inference_time_4080.txt
+```
+
+Observed result:
+
+```text
+Elapsed seconds: 51.6623159
+```
+
+This is a smoke-test observation, not an official benchmark.
+
+## VRAM Observation
+
+VRAM was sampled with:
+
+```powershell
+nvidia-smi --query-gpu=timestamp,name,memory.used,memory.total,utilization.gpu --format=csv -l 1 > docs\experiments\stableviton_smoke_vram_4080.csv
+```
+
+Observed result:
+
+- CSV rows: `79`
+- Max VRAM used: `9679 MiB` (`9.45 GB`)
+
+This is a smoke-test observation, not an official benchmark.
+
+## Troubleshooting
+
+### 1. VITON-HD default test.zip structure
+
+The official VITON-HD `test.zip` provided this base structure:
+
+```text
+DATA/zalando-hd-resized/
+  test_pairs.txt
+  test/
+    image/
+    cloth/
+    cloth-mask/
+    image-parse/
+    openpose-img/
+    openpose-json/
+```
+
+StableVITON inference required:
+
+```text
+DATA/zalando-hd-resized/
+  test_pairs.txt
+  test/
+    image/
+    image-densepose/
+    agnostic-v3.2/
+    agnostic-mask/
+    cloth/
+    cloth-mask/
+```
+
+The missing items were:
+
+```text
+test/image-densepose
+test/agnostic-v3.2
+test/agnostic-mask
+```
+
+The issue was not the checkpoint. Checkpoints, CUDA, PyTorch, and dependency imports were ready. The issue was that StableVITON expects preprocessed DensePose, agnostic image, and agnostic mask inputs at inference time.
+
+### 2. Mini smoke dataset
+
+Instead of preprocessing the full VITON-HD test set, the first 3 pairs from `test_pairs.txt` were copied into:
+
+```text
+D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+This kept the smoke test small and isolated from the default dataset root.
+
+### 3. Approximate agnostic preprocessing
+
+`generate_stableviton_agnostic_from_parse.py` generated approximate `agnostic-v3.2` and `agnostic-mask` files from `image-parse`.
+
+This is not identical to official StableVITON benchmark preprocessing. It is only for smoke testing whether CLI inference can run end to end.
+
+### 4. DensePose image-densepose
+
+DensePose was generated in WSL Ubuntu with Detectron2 DensePose and `apply_net.py show`.
+
+The raw DensePose output names looked like `08909_00.0001.png`, so outputs were converted/renamed to `{person_name}.jpg` for the StableVITON dataset loader.
+
+### 5. Dependency issue: cleanfid
+
+StableVITON inference initially failed with:
+
+```text
+ModuleNotFoundError: No module named 'cleanfid'
+```
+
+It was resolved with:
+
+```powershell
+D:\conda-envs\vton\python.exe -m pip install clean-fid
+```
+
+The `No module named 'triton'` warning remained, but it did not stop inference.
+
+### 6. Unpaired mode
+
+The mini smoke `test_pairs.txt` uses different person and cloth filenames, so inference had to run with `--unpair`.
 
 ## Safety Notes
 
@@ -348,13 +329,11 @@ samples_smoke/unpair/08909_00_02783_00.jpg
 - Do not commit checkpoints.
 - Do not commit datasets.
 - Do not commit generated images.
-- Runtime and VRAM logs are local smoke-test notes, not official benchmark results.
-- Record CLI inference success or failure only after the actual run happens.
+- Runtime and VRAM values are local smoke-test notes, not official benchmark results.
 
-## Next Steps
+## Remaining Work
 
-- Prepare VITON-HD test sample structure.
-- Run `scripts/verify_external_stableviton.py`.
-- Run `scripts/run_stableviton_smoke.py` dry-run.
-- Run StableVITON CLI inference once test data is ready.
-- Record success or failure logs.
+- Full VITON-HD batch inference is not done.
+- Official benchmark-quality preprocessing is not done.
+- Fit analyzer and confidence scoring are not connected.
+- FastAPI backend does not yet call StableVITON automatically.
