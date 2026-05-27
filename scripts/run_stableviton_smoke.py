@@ -116,8 +116,8 @@ def cli_path(value: str) -> str:
     return f".\\{normalized}"
 
 
-def display_data_path(relative_path: str) -> str:
-    return str(Path("DATA") / "zalando-hd-resized" / relative_path)
+def display_data_path(data_root: Path, relative_path: str) -> str:
+    return str(Path("DATA") / data_root.name / relative_path)
 
 
 def print_status(status: str, label: str, detail: str = "") -> None:
@@ -187,7 +187,7 @@ def sample_names(paths: list[Path], limit: int = 3) -> str:
 
 def check_pair_list(data_root: Path) -> bool:
     pair_path = data_root / PAIR_LIST_FILE
-    display_path = display_data_path(PAIR_LIST_FILE)
+    display_path = display_data_path(data_root, PAIR_LIST_FILE)
     if not pair_path.is_file():
         print_status("MISSING", display_path)
         return False
@@ -211,7 +211,7 @@ def check_test_dirs(data_root: Path, relative_dirs: Iterable[str]) -> bool:
     ready = True
     for relative_dir in relative_dirs:
         path = data_root / relative_dir
-        display = display_data_path(relative_dir)
+        display = display_data_path(data_root, relative_dir)
         if not path.is_dir():
             print_status("MISSING", display)
             ready = False

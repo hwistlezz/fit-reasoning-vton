@@ -78,9 +78,11 @@ Checkpoints are large local assets and must not be committed to GitHub.
 Summary:
 - external repo: ready
 - checkpoints: ready
-- data root: pending
+- data root: partial
 - imports: ready
 ```
+
+The default VITON-HD test data root exists locally, but it is still partial for StableVITON because `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` are missing.
 
 ## VITON-HD Test Data Structure
 
@@ -111,6 +113,22 @@ See [VITON-HD Test Data Setup](../setup/vitonhd_test_data_setup.md).
 Checkpoints and dependencies are ready. The remaining bottleneck is the VITON-HD test data structure.
 
 Prepare the test data according to the StableVITON `dataset.py` requirements, then run the dry-run wrapper again. Actual CLI inference should be executed with `run_stableviton_smoke.py --execute` only after the data root is reported as ready.
+
+The default VITON-HD `test.zip` may not include the StableVITON-specific `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` inputs. For the first smoke test, use a mini local subset:
+
+```powershell
+cd D:\GitHub\fit-reasoning-vton
+
+D:\conda-envs\vton\python.exe .\scripts\prepare_stableviton_smoke_subset.py `
+  --source-root D:\GitHub\StableVITON\DATA\zalando-hd-resized `
+  --target-root D:\GitHub\StableVITON\DATA\stableviton-smoke `
+  --num-samples 3
+
+D:\conda-envs\vton\python.exe .\scripts\generate_stableviton_agnostic_from_parse.py `
+  --data-root D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+The generated agnostic files are approximate smoke-test inputs based on `image-parse`; they are not official StableVITON preprocessing outputs. DensePose files still need to be prepared separately before actual inference.
 
 ## Planned Inference Command
 

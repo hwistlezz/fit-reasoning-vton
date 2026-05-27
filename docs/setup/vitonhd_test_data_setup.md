@@ -116,6 +116,64 @@ If using default paired mode, each line can still include two columns, but the p
 
 If using unpaired mode, pass `--unpair` to `scripts/run_stableviton_smoke.py` so the cloth filename from column 2 is used.
 
+## Mini Smoke Dataset Strategy
+
+The default VITON-HD `test.zip` does not include every StableVITON inference input. In particular, `image-densepose`, `agnostic-v3.2`, and `agnostic-mask` may be missing.
+
+Instead of preparing the full VITON-HD test set at once, first copy only the first 1 to 3 pairs from `test_pairs.txt` into a separate local mini dataset.
+
+Target path:
+
+```text
+D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+The helper below copies the available base test files:
+
+```powershell
+cd D:\GitHub\fit-reasoning-vton
+
+D:\conda-envs\vton\python.exe .\scripts\prepare_stableviton_smoke_subset.py `
+  --source-root D:\GitHub\StableVITON\DATA\zalando-hd-resized `
+  --target-root D:\GitHub\StableVITON\DATA\stableviton-smoke `
+  --num-samples 3
+```
+
+It creates:
+
+```text
+DATA/stableviton-smoke/
+  test_pairs.txt
+  test/
+    image/
+    image-parse/
+    openpose-img/
+    openpose-json/
+    cloth/
+    cloth-mask/
+    image-densepose/
+    agnostic-v3.2/
+    agnostic-mask/
+```
+
+Then generate approximate agnostic inputs from `image-parse`:
+
+```powershell
+D:\conda-envs\vton\python.exe .\scripts\generate_stableviton_agnostic_from_parse.py `
+  --data-root D:\GitHub\StableVITON\DATA\stableviton-smoke
+```
+
+This approximate preprocessing fills upper-garment parsing labels with gray and writes:
+
+```text
+test/agnostic-v3.2/{person_file}
+test/agnostic-mask/{person_base}_mask.png
+```
+
+This is not official StableVITON preprocessing and must only be used for CLI smoke-test preparation. It is not suitable for benchmark reporting or qualitative claims.
+
+After this step, `image-densepose` is still required. Generate or copy DensePose files for the same person filenames before running actual StableVITON inference.
+
 ## PowerShell Placement Checks
 
 ```powershell
@@ -130,6 +188,17 @@ Get-ChildItem .\DATA\zalando-hd-resized\test\cloth-mask | Select-Object -First 5
 Get-Content .\DATA\zalando-hd-resized\test_pairs.txt -TotalCount 5
 ```
 
+Mini smoke dataset checks:
+
+```powershell
+Get-ChildItem .\DATA\stableviton-smoke
+Get-ChildItem .\DATA\stableviton-smoke\test
+Get-ChildItem .\DATA\stableviton-smoke\test\agnostic-v3.2 | Select-Object -First 5 Name
+Get-ChildItem .\DATA\stableviton-smoke\test\agnostic-mask | Select-Object -First 5 Name
+Get-ChildItem .\DATA\stableviton-smoke\test\image-densepose | Select-Object -First 5 Name
+Get-Content .\DATA\stableviton-smoke\test_pairs.txt -TotalCount 5
+```
+
 ## Project Verification Commands
 
 ```powershell
@@ -141,6 +210,20 @@ D:\conda-envs\vton\python.exe .\scripts\verify_external_stableviton.py `
 
 D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
   --stableviton-root D:\GitHub\StableVITON
+```
+
+To verify the mini smoke dataset instead of the default data root:
+
+```powershell
+D:\conda-envs\vton\python.exe .\scripts\verify_external_stableviton.py `
+  --stableviton-root D:\GitHub\StableVITON `
+  --data-root D:\GitHub\StableVITON\DATA\stableviton-smoke `
+  --check-imports
+
+D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
+  --stableviton-root D:\GitHub\StableVITON `
+  --data-root DATA\stableviton-smoke `
+  --unpair
 ```
 
 Expected state after data setup:

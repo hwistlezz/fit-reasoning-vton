@@ -128,8 +128,8 @@ def check_checkpoints(root: Path) -> bool:
     return all_ready
 
 
-def display_data_path(relative_path: str) -> str:
-    return str(Path("DATA") / "zalando-hd-resized" / relative_path)
+def display_data_path(data_root: Path, relative_path: str) -> str:
+    return str(Path("DATA") / data_root.name / relative_path)
 
 
 def sample_names(paths: list[Path], limit: int = 3) -> str:
@@ -142,7 +142,7 @@ def list_immediate_files(path: Path) -> list[Path]:
 
 def check_pair_list(data_root: Path) -> bool:
     pair_path = data_root / PAIR_LIST_FILE
-    display_path = display_data_path(PAIR_LIST_FILE)
+    display_path = display_data_path(data_root, PAIR_LIST_FILE)
     if not pair_path.is_file():
         print_status("MISSING", display_path)
         return False
@@ -164,7 +164,7 @@ def check_pair_list(data_root: Path) -> bool:
 
 def check_data_dir(data_root: Path, relative_path: str) -> bool:
     path = data_root / relative_path
-    display_path = display_data_path(relative_path)
+    display_path = display_data_path(data_root, relative_path)
     if not path.is_dir():
         print_status("MISSING", display_path)
         return False
