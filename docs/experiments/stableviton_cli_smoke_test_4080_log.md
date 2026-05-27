@@ -1,33 +1,33 @@
 # StableVITON CLI Smoke Test Log - RTX 4080
 
-## 목적
+## Purpose
 
-PC1에서 StableVITON을 FastAPI backend에 연결하기 전, 외부 StableVITON repo가 단독 CLI inference를 수행할 수 있는지 확인한다.
+Before connecting StableVITON to the FastAPI backend on PC1, verify that the external StableVITON repository can run standalone CLI inference.
 
-## 작업 범위
+## Scope
 
-- StableVITON 외부 repo clone 확인
-- conda environment 확인
-- CUDA / PyTorch 확인
-- 주요 dependency import 확인
-- checkpoint 위치 확인
-- VITON-HD test data 구조 확인
-- inference command 확인
-- 성공 또는 실패 로그 기록
+- Confirm external StableVITON repo clone
+- Confirm conda environment
+- Confirm CUDA / PyTorch
+- Confirm key dependency imports
+- Confirm checkpoint locations
+- Confirm VITON-HD test data structure
+- Confirm inference command
+- Record success or failure logs
 
-## 현재 상태
+## Current Status
 
-- 외부 repo clone: 완료
-- conda env 생성: 완료
-- CUDA 확인: 완료
-- dependency import 확인: 완료
-- checkpoint 다운로드: 진행 중
-- VITON-HD test data 준비: 미완료
-- inference 실행: 미실행
+- External repo clone: done
+- Conda env creation: done
+- CUDA check: done
+- Dependency import check: done
+- Checkpoint download: done
+- VITON-HD test data setup: pending
+- Inference run: not started
 
-## 환경 정보
+## Environment
 
-| 항목 | 값 |
+| Item | Value |
 | --- | --- |
 | OS | Windows |
 | GPU | NVIDIA GeForce RTX 4080 |
@@ -46,35 +46,45 @@ PC1에서 StableVITON을 FastAPI backend에 연결하기 전, 외부 StableVITON
 | Transformers | `4.33.2` |
 | pip check | `No broken requirements found` |
 
-## 확인된 경고
+## Known Warnings
 
 ### pkg_resources deprecation warning
 
-`pytorch_lightning==1.5.0`에서 `pkg_resources` deprecation warning이 출력된다.
+`pytorch_lightning==1.5.0` prints a `pkg_resources` deprecation warning.
 
-현재는 import 실패가 아니므로 smoke test 진행을 막지 않는다.
+This is not an import failure, so it does not block the smoke test.
 
 ### Triton warning
 
-Windows 환경에서 `triton` 관련 경고가 출력된다.
+The Windows environment prints a `triton` warning during dependency checks.
 
-현재는 `diffusers` import 실패가 아니므로 smoke test 진행을 막지 않는다.
+This is not a `diffusers` import failure, so it does not block the smoke test.
 
-## checkpoint 준비 상태
+## Checkpoint Status
 
-아래 파일을 `D:\GitHub\StableVITON\ckpts`에 로컬로 배치한다.
+The following checkpoints are placed locally under `D:\GitHub\StableVITON\ckpts`.
 
-- `VITONHD.ckpt`
-- `VITONHD_PBE_pose.ckpt`
-- `VITONHD_VAE_finetuning.ckpt`
+| File | Status | Size |
+| --- | --- | --- |
+| `VITONHD.ckpt` | done | about 6.85 GB |
+| `VITONHD_PBE_pose.ckpt` | done | about 6.85 GB |
+| `VITONHD_VAE_finetuning.ckpt` | done | about 376 MB |
 
-checkpoint는 크기가 매우 크므로 GitHub에 절대 업로드하지 않는다.
+Checkpoints are large local assets and must not be committed to GitHub.
 
-현재 checkpoint 다운로드가 진행 중이며, 아직 위 세 파일은 준비되지 않았다.
+## Current Verification Result
 
-## VITON-HD test data 구조
+```text
+Summary:
+- external repo: ready
+- checkpoints: ready
+- data root: pending
+- imports: ready
+```
 
-StableVITON inference에는 아래 구조가 필요하다.
+## VITON-HD Test Data Structure
+
+StableVITON inference requires the following local data structure.
 
 ```text
 DATA/zalando-hd-resized/
@@ -87,11 +97,13 @@ DATA/zalando-hd-resized/
     cloth_mask/
 ```
 
-현재 VITON-HD test data는 아직 준비되지 않았다.
+The current pending item is `D:\GitHub\StableVITON\DATA\zalando-hd-resized`.
 
-## 예정 inference command
+See [VITON-HD Test Data Setup](../setup/vitonhd_test_data_setup.md).
 
-checkpoint와 test data 준비 후 아래 형식으로 실행한다.
+## Planned Inference Command
+
+Run only after the VITON-HD test data structure is ready.
 
 ```powershell
 cd D:\GitHub\StableVITON
@@ -105,33 +117,51 @@ python inference.py `
   --save_dir .\samples_smoke
 ```
 
-## 검증 스크립트
-
-checkpoint 다운로드 전에도 외부 repo 준비 상태를 확인할 수 있도록 우리 repo에서 아래 명령을 실행한다.
+The safer dry-run wrapper from this repository can be used first.
 
 ```powershell
-python .\scripts\verify_external_stableviton.py --stableviton-root D:\GitHub\StableVITON
+cd D:\GitHub\fit-reasoning-vton
+
+D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
+  --stableviton-root D:\GitHub\StableVITON
 ```
 
-dependency import까지 확인하려면 아래 명령을 실행한다.
+Actual inference requires `--execute` and should only be run after the data root is ready.
+
+## Verification Commands
+
+External repo, checkpoint, data, and import check:
 
 ```powershell
-D:\conda-envs\vton\python.exe .\scripts\verify_external_stableviton.py --stableviton-root D:\GitHub\StableVITON --check-imports
+cd D:\GitHub\fit-reasoning-vton
+
+D:\conda-envs\vton\python.exe .\scripts\verify_external_stableviton.py `
+  --stableviton-root D:\GitHub\StableVITON `
+  --check-imports
 ```
 
-## 주의사항
+Smoke command dry-run:
 
-- StableVITON 외부 repo는 우리 repo 안에 복사하지 않는다.
-- checkpoint는 Git에 포함하지 않는다.
-- dataset은 Git에 포함하지 않는다.
-- generated image는 Git에 포함하지 않는다.
-- 실행 시간과 VRAM 기록은 개발 환경 smoke log이며 공식 benchmark가 아니다.
-- inference 성공이나 실패는 실제 실행 후에만 기록한다.
+```powershell
+cd D:\GitHub\fit-reasoning-vton
 
-## 다음 작업
+D:\conda-envs\vton\python.exe .\scripts\run_stableviton_smoke.py `
+  --stableviton-root D:\GitHub\StableVITON
+```
 
-- checkpoint 다운로드 완료 확인
-- VITON-HD test sample 구조 준비
-- `scripts/verify_external_stableviton.py` 실행
-- StableVITON CLI inference 1차 실행
-- 성공/실패 로그 기록
+## Safety Notes
+
+- Do not copy the external StableVITON repo into this repository.
+- Do not commit checkpoints.
+- Do not commit datasets.
+- Do not commit generated images.
+- Runtime and VRAM logs are local smoke-test notes, not official benchmark results.
+- Record CLI inference success or failure only after the actual run happens.
+
+## Next Steps
+
+- Prepare VITON-HD test sample structure.
+- Run `scripts/verify_external_stableviton.py`.
+- Run `scripts/run_stableviton_smoke.py` dry-run.
+- Run StableVITON CLI inference once test data is ready.
+- Record success or failure logs.
