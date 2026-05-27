@@ -9,6 +9,11 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# External repositories
+StableVITON/
+IDM-VTON/
+CatVTON/
+
 # Datasets
 backend/datasets/raw/*
 backend/datasets/processed/*
@@ -21,8 +26,15 @@ backend/datasets/*.csv
 !backend/datasets/raw_test/.gitkeep
 
 # Models / checkpoints
+checkpoints/
 backend/models/*
 backend/checkpoints/*
+*.ckpt
+*.pth
+*.pt
+*.safetensors
+*.onnx
+*.pkl
 
 !backend/models/.gitkeep
 !backend/models/dwpose/
@@ -31,9 +43,13 @@ backend/checkpoints/*
 !backend/models/schp/.gitkeep
 
 # Outputs / logs
-backend/outputs/*
-backend/logs/*
+backend/outputs/**
+backend/logs/**
 *.log
 
 !backend/outputs/.gitkeep
 !backend/logs/.gitkeep
+
+# Hugging Face / cache
+hf-cache/
+.cache/

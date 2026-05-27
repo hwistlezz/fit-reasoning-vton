@@ -129,6 +129,8 @@ StableVITON, 2.5D 정보, FIT 데이터셋 기반 fit-aware scoring은 후속 �
 - [프로젝트 개요](docs/project_overview.md)
 - [로드맵](docs/roadmap.md)
 - [환경 설정](docs/setup/environment.md)
+- [StableVITON 외부 설정](docs/setup/stableviton_external_setup.md)
+- [StableVITON PC1 setup log template](docs/experiments/stableviton_pc1_setup_log_template.md)
 - [IDM-VTON 외부 설정](docs/setup/idm_vton_external_setup.md)
 - [IDM-VTON 4080 smoke test 준비 로그](docs/experiments/idm_vton_smoke_test_4080_log.md)
 - [CatVTON 외부 설정](docs/setup/catvton_external_setup.md)
