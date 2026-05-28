@@ -63,9 +63,25 @@ Example response:
 
 ## Try-On Job API
 
-`POST /api/tryon` creates a pending job, stores the uploaded input images under `backend/outputs/{job_id}/`, and queues StableVITON inference in a FastAPI background task.
+`POST /api/tryon`은 pending job을 생성하고, 업로드된 입력 이미지를 `backend/outputs/{job_id}/`에 저장한 뒤, job별 StableVITON input root를 준비하고 FastAPI background task로 StableVITON 흐름을 시작합니다.
 
-The current wrapper runs StableVITON against the prepared smoke data configured by `STABLEVITON_DATA_ROOT`. It does not yet preprocess arbitrary uploaded images into StableVITON-ready inputs. The uploaded images are still stored and returned through the API so the frontend contract stays stable.
+현재 `/api/tryon` 흐름은 업로드 이미지를 아래 구조로 복사합니다.
+
+```text
+backend/outputs/{job_id}/stableviton_input/
+  test_pairs.txt
+  test/
+    image/person.png
+    cloth/cloth.png
+    image-densepose/
+    agnostic-v3.2/
+    agnostic-mask/
+    cloth-mask/
+```
+
+아직 DensePose, `agnostic-v3.2`, `agnostic-mask`, `cloth-mask`는 자동 생성하지 않습니다. 필요한 artifact가 없으면 StableVITON inference 실행 전에 job을 `failed`로 처리합니다. full upload-based inference는 preprocessing pipeline 구현 이후 가능합니다.
+
+하위 StableVITON wrapper는 job-specific data root를 넘기지 않는 경우 기존 `STABLEVITON_DATA_ROOT` 기반 prepared smoke data 실행을 계속 지원합니다.
 
 ### POST /api/tryon
 
@@ -78,7 +94,7 @@ curl.exe -X POST "http://127.0.0.1:8000/api/tryon" `
   -F "usual_size=L"
 ```
 
-Example response:
+예시 응답:
 
 ```json
 {
@@ -88,13 +104,24 @@ Example response:
 }
 ```
 
+preprocessing artifact가 생성되기 전까지는 업로드 이미지 job의 최종 상태가 `failed`일 수 있습니다.
+
+```json
+{
+  "job_id": "job_20260527_153000_ab12cd34",
+  "status": "failed",
+  "progress": 100,
+  "message": "DensePose artifact is missing. Expected file: D:\\GitHub\\fit-reasoning-vton\\backend\\outputs\\job_20260527_153000_ab12cd34\\stableviton_input\\test\\image-densepose\\person.png"
+}
+```
+
 ### GET /api/job/{job_id}
 
 ```powershell
 curl.exe http://127.0.0.1:8000/api/job/job_20260527_153000_ab12cd34
 ```
 
-Example response:
+예시 응답:
 
 ```json
 {
@@ -111,7 +138,7 @@ Example response:
 curl.exe http://127.0.0.1:8000/api/result/job_20260527_153000_ab12cd34
 ```
 
-Example response:
+모든 StableVITON artifact가 준비된 뒤의 성공 예시:
 
 ```json
 {
@@ -164,6 +191,9 @@ The StableVITON raw save directory is job-scoped under `backend/outputs/stablevi
 - Runtime path setup
 - Static serving for `/outputs`
 - Upload image storage
+- Job-scoped StableVITON input adapter
+- `stableviton_input/test_pairs.txt` creation
+- Missing preprocessing artifact preflight
 - Pending/running/done/failed job JSON files
 - StableVITON preflight checks
 - StableVITON subprocess wrapper
@@ -175,6 +205,9 @@ The StableVITON raw save directory is job-scoped under `backend/outputs/stablevi
 - Checkpoints
 - Dataset files
 - Generated images
+- DensePose generation
+- `agnostic-v3.2` / `agnostic-mask` generation
+- `cloth-mask` generation
 - Full uploaded-image StableVITON preprocessing pipeline
 - Fit analyzer
 - Confidence scoring
