@@ -67,6 +67,8 @@ backend/logs/**
 outputs/**
 !outputs/
 !outputs/.gitkeep
+DATA/
+samples_smoke/
 
 # Hugging Face / cache
 hf-cache/
