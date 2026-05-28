@@ -13,7 +13,6 @@
 현재 프로젝트 상태는 다음과 같습니다.
 
 - #14에서 StableVITON wrapper가 backend에 연결되었습니다.
-- #48에서 uploaded image 기반 input adapter는 PR 리뷰 대기 중입니다.
 - PC3 batch evaluation은 실제 대량 실험 전, 실험 기록 양식을 먼저 정리하는 단계입니다.
 - DensePose / agnostic / mask artifact가 부족하면 성공 케이스가 아니라 실패 케이스로 기록해야 합니다.
 
