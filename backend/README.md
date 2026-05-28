@@ -148,10 +148,11 @@ curl.exe http://127.0.0.1:8000/api/result/job_20260527_153000_ab12cd34
   "cloth_image_url": "/outputs/job_20260527_153000_ab12cd34/cloth.png",
   "result_image_url": "/outputs/job_20260527_153000_ab12cd34/result.png",
   "confidence": {
-    "score": 70,
+    "score": 60,
     "level": "medium",
     "warnings": [
-      "Current fit analysis is mocked. This job only verifies StableVITON result image generation."
+      "현재 fit 분석은 placeholder입니다. 실제 신뢰도 계산은 아직 연결되지 않았습니다.",
+      "StableVITON 결과 이미지 생성 여부와 응답 schema 연동만 검증합니다."
     ]
   },
   "fit": {
@@ -163,7 +164,7 @@ curl.exe http://127.0.0.1:8000/api/result/job_20260527_153000_ab12cd34
       "garment_length_ratio": null
     },
     "explanations": [
-      "StableVITON generated a result image, but the real fit analyzer is not connected yet."
+      "StableVITON 결과 이미지는 생성되었지만, 실제 fit analyzer는 아직 연결되지 않았습니다."
     ]
   },
   "annotations": [],
@@ -179,6 +180,34 @@ backend/outputs/{job_id}/stableviton_stderr.log
 ```
 
 The StableVITON raw save directory is job-scoped under `backend/outputs/stableviton_raw/{job_id}/`.
+
+## Fit Analyzer Placeholder
+
+현재 fit analyzer는 placeholder입니다. `confidence.score`는 실제 CV 기반 계산값이 아니며, 기본값은 `60`, `level`은 `medium`입니다.
+
+현재 기준:
+
+- `0-39`: `low`
+- `40-69`: `medium`
+- `70-100`: `high`
+
+현재 `fit.label`은 `unknown`으로 고정됩니다. `shoulder_ratio`, `torso_width_ratio`, `sleeve_length_ratio`, `garment_length_ratio`는 아직 계산하지 않으며 `null`로 반환합니다.
+
+`annotations`는 현재 빈 배열입니다.
+
+추후 annotation hotspot은 아래 형태를 고려할 수 있지만, 이번 skeleton에서는 실제 annotation을 생성하지 않습니다.
+
+```json
+{
+  "part": "shoulder",
+  "x": 50,
+  "y": 30,
+  "severity": "medium",
+  "message": "어깨선 정렬 신뢰도가 낮습니다."
+}
+```
+
+실제 fit confidence 계산은 PC3 batch evaluation과 failure case 수집 후 rule 또는 model 기반 analyzer로 확장합니다.
 
 ## Current Scope
 
@@ -199,6 +228,8 @@ The StableVITON raw save directory is job-scoped under `backend/outputs/stablevi
 - StableVITON subprocess wrapper
 - StableVITON stdout/stderr log capture
 - `result.png` copy into `backend/outputs/{job_id}/`
+- Fit analyzer placeholder
+- Confidence response placeholder
 
 ## Excluded For Now
 
@@ -209,8 +240,8 @@ The StableVITON raw save directory is job-scoped under `backend/outputs/stablevi
 - `agnostic-v3.2` / `agnostic-mask` generation
 - `cloth-mask` generation
 - Full uploaded-image StableVITON preprocessing pipeline
-- Fit analyzer
-- Confidence scoring
+- CV-based fit analyzer
+- Real confidence scoring
 - Frontend implementation
 
 ## Repository Safety
