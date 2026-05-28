@@ -13,10 +13,13 @@ from backend.app.core.paths import ensure_output_dir
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 JOB_ID_PATTERN = re.compile(r"^job_\d{8}_\d{6}_[a-f0-9]{8}$")
-PENDING_MESSAGE = "StableVITON inference wrapper is not connected yet."
+PENDING_MESSAGE = "StableVITON inference is queued."
+RUNNING_MESSAGE = "StableVITON inference is running."
+DONE_MESSAGE = "StableVITON inference completed."
 RESULT_PENDING_MESSAGE = (
-    "Result image is not available because StableVITON inference wrapper is not connected yet."
+    "Result image is not available yet because StableVITON inference is queued."
 )
+RESULT_DONE_MESSAGE = "StableVITON result image was generated. Fit analysis is still mocked."
 
 
 class JobStoreError(Exception):
@@ -92,6 +95,103 @@ def public_output_url(job_id: str, filename: str) -> str:
     return f"/outputs/{job_id}/{filename}"
 
 
+def _timestamp() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def _read_job_meta(job_id: str) -> dict[str, Any]:
+    job_dir = get_existing_job_dir(job_id)
+    return read_json(job_dir / "meta.json")
+
+
+def _image_urls_from_meta(job_id: str, meta: dict[str, Any]) -> tuple[str | None, str | None]:
+    person_filename = meta.get("person_image", {}).get("stored_filename")
+    cloth_filename = meta.get("cloth_image", {}).get("stored_filename")
+    person_url = public_output_url(job_id, person_filename) if person_filename else None
+    cloth_url = public_output_url(job_id, cloth_filename) if cloth_filename else None
+    return person_url, cloth_url
+
+
+def write_job_status(job_id: str, status: str, progress: int, message: str) -> None:
+    job_dir = get_existing_job_dir(job_id)
+    existing_status_path = job_dir / "status.json"
+    existing_status = read_json(existing_status_path) if existing_status_path.is_file() else {}
+    status_data = {
+        "job_id": job_id,
+        "status": status,
+        "progress": progress,
+        "message": message,
+        "created_at": existing_status.get("created_at", _timestamp()),
+        "updated_at": _timestamp(),
+    }
+    write_json(existing_status_path, status_data)
+
+
+def mark_job_running(job_id: str) -> None:
+    write_job_status(job_id, "running", 20, RUNNING_MESSAGE)
+
+
+def write_success_result(job_id: str, result_filename: str = "result.png") -> None:
+    job_dir = get_existing_job_dir(job_id)
+    meta = _read_job_meta(job_id)
+    person_url, cloth_url = _image_urls_from_meta(job_id, meta)
+    result = {
+        "job_id": job_id,
+        "status": "done",
+        "person_image_url": person_url,
+        "cloth_image_url": cloth_url,
+        "result_image_url": public_output_url(job_id, result_filename),
+        "confidence": {
+            "score": 70,
+            "level": "medium",
+            "warnings": [
+                "Current fit analysis is mocked. This job only verifies StableVITON result image generation."
+            ],
+        },
+        "fit": {
+            "label": "unknown",
+            "scores": {
+                "shoulder_ratio": None,
+                "torso_width_ratio": None,
+                "sleeve_length_ratio": None,
+                "garment_length_ratio": None,
+            },
+            "explanations": [
+                "StableVITON generated a result image, but the real fit analyzer is not connected yet."
+            ],
+        },
+        "annotations": [],
+        "message": RESULT_DONE_MESSAGE,
+    }
+    write_json(job_dir / "result.json", result)
+    write_job_status(job_id, "done", 100, DONE_MESSAGE)
+
+
+def write_failed_result(job_id: str, code: str, message: str) -> None:
+    job_dir = get_existing_job_dir(job_id)
+    meta = _read_job_meta(job_id)
+    person_url, cloth_url = _image_urls_from_meta(job_id, meta)
+    error = {
+        "code": code,
+        "message": message,
+    }
+    result = {
+        "job_id": job_id,
+        "status": "failed",
+        "person_image_url": person_url,
+        "cloth_image_url": cloth_url,
+        "result_image_url": None,
+        "confidence": None,
+        "fit": None,
+        "annotations": [],
+        "message": message,
+        "error": error,
+    }
+    write_json(job_dir / "result.json", result)
+    write_json(job_dir / "error.json", {"job_id": job_id, "status": "failed", "error": error})
+    write_job_status(job_id, "failed", 100, message)
+
+
 async def create_pending_job(
     *,
     person_image: UploadFile,
@@ -163,7 +263,7 @@ async def create_pending_job(
     return {
         "job_id": job_id,
         "status": "pending",
-        "message": "Job created. StableVITON inference wrapper is not connected yet.",
+        "message": "Job created. StableVITON inference is queued.",
     }
 
 
@@ -179,4 +279,6 @@ def read_job_result(job_id: str) -> dict[str, Any]:
     result.setdefault("confidence", None)
     result.setdefault("fit", None)
     result.setdefault("result_image_url", None)
+    result.setdefault("message", "")
+    result.setdefault("error", None)
     return result

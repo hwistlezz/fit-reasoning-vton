@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, status
 
 from backend.app.core.job_store import (
     EmptyUploadError,
@@ -11,6 +11,7 @@ from backend.app.core.job_store import (
 )
 from backend.app.schemas.result import TryOnResultResponse
 from backend.app.schemas.tryon import JobStatusResponse, TryOnCreateResponse
+from backend.app.workers.tryon_worker import run_tryon_job
 
 
 router = APIRouter(tags=["tryon"])
@@ -18,6 +19,7 @@ router = APIRouter(tags=["tryon"])
 
 @router.post("/tryon", response_model=TryOnCreateResponse)
 async def create_tryon_job(
+    background_tasks: BackgroundTasks,
     person_image: UploadFile = File(...),
     cloth_image: UploadFile = File(...),
     height: float = Form(...),
@@ -40,6 +42,7 @@ async def create_tryon_job(
             detail="Failed to create try-on job.",
         ) from exc
 
+    background_tasks.add_task(run_tryon_job, response["job_id"])
     return TryOnCreateResponse(**response)
 
 
