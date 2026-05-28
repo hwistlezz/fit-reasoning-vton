@@ -2,7 +2,7 @@
 
 ## 1. 목적
 
-이 문서는 PC3 학교 컴퓨터에서 StableVITON batch evaluation을 실제로 수행할 수 있는 환경인지 확인하기 위한 preflight 로그이다.
+이 문서는 PC 3 컴퓨터에서 StableVITON batch evaluation을 실제로 수행할 수 있는 환경인지 확인하기 위한 preflight 로그이다.
 
 이번 단계에서는 대량 inference를 실행하지 않는다. 실제 실행 전에 repo / branch / Python / CUDA / GPU / StableVITON external repo / checkpoint / batch dry-run 상태를 먼저 확인한다.
 
