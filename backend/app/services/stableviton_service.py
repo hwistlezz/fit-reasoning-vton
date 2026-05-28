@@ -92,7 +92,7 @@ def write_stableviton_logs(job_dir: Path, stdout: str | bytes | None, stderr: st
     (job_dir / "stableviton_stderr.log").write_text(_as_text(stderr), encoding="utf-8")
 
 
-def preflight_stableviton() -> None:
+def preflight_stableviton(data_root: str | Path | None = None) -> None:
     stableviton_root = _stableviton_root()
     if not stableviton_root.is_dir():
         raise StableVitonServiceError(
@@ -128,14 +128,14 @@ def preflight_stableviton() -> None:
             f"Required StableVITON checkpoint file(s) were not found: {missing}",
         )
 
-    data_root = _resolve_stableviton_path(settings.stableviton_data_root)
-    if not data_root.is_dir():
+    resolved_data_root = _resolve_stableviton_path(data_root or settings.stableviton_data_root)
+    if not resolved_data_root.is_dir():
         raise StableVitonServiceError(
             "STABLEVITON_DATA_ROOT_NOT_FOUND",
-            f"StableVITON data root was not found: {data_root}",
+            f"StableVITON data root was not found: {resolved_data_root}",
         )
 
-    pair_list = data_root / "test_pairs.txt"
+    pair_list = resolved_data_root / "test_pairs.txt"
     missing_data = [str(pair_list)] if not pair_list.is_file() else []
     if pair_list.is_file():
         pair_lines = [line.strip() for line in pair_list.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -146,7 +146,7 @@ def preflight_stableviton() -> None:
             missing_data.append(f"{pair_list} has invalid pair lines")
 
     for relative_dir in REQUIRED_DATA_DIRS:
-        input_dir = data_root / relative_dir
+        input_dir = resolved_data_root / relative_dir
         if not input_dir.is_dir():
             missing_data.append(str(input_dir))
             continue
@@ -156,12 +156,16 @@ def preflight_stableviton() -> None:
     if missing_data:
         raise StableVitonServiceError(
             "STABLEVITON_DATA_ROOT_NOT_FOUND",
-            "StableVITON smoke data is incomplete: " + ", ".join(missing_data),
+            "StableVITON data root is incomplete: " + ", ".join(missing_data),
         )
 
 
-def build_stableviton_command(output_dir: str | Path | None = None) -> list[str]:
+def build_stableviton_command(
+    output_dir: str | Path | None = None,
+    data_root: str | Path | None = None,
+) -> list[str]:
     save_dir = output_dir or settings.stableviton_output_dir
+    inference_data_root = data_root or settings.stableviton_data_root
     command = [
         str(settings.stableviton_python),
         "inference.py",
@@ -172,7 +176,7 @@ def build_stableviton_command(output_dir: str | Path | None = None) -> list[str]
         "--model_load_path",
         _cli_path(settings.stableviton_model_load_path),
         "--data_root_dir",
-        _cli_path(settings.stableviton_data_root),
+        _cli_path(inference_data_root),
         "--save_dir",
         _cli_path(save_dir),
         "--denoise_steps",
@@ -216,12 +220,16 @@ def _copy_result_image_as_png(source_path: Path, target_path: Path) -> None:
         ) from exc
 
 
-def run_stableviton_inference(job_id: str, job_dir: Path) -> StableVitonRunResult:
-    preflight_stableviton()
+def run_stableviton_inference(
+    job_id: str,
+    job_dir: Path,
+    data_root: str | Path | None = None,
+) -> StableVitonRunResult:
+    preflight_stableviton(data_root)
 
     output_root = _output_root(job_id)
     output_root.mkdir(parents=True, exist_ok=True)
-    command = build_stableviton_command(output_root)
+    command = build_stableviton_command(output_dir=output_root, data_root=data_root)
     command_header = (
         f"job_id: {job_id}\n"
         f"cwd: {_stableviton_root()}\n"
