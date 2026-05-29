@@ -15,6 +15,11 @@ IDM-VTON/
 CatVTON/
 
 # Dataset image/data artifacts
+backend/datasets/raw/**
+backend/datasets/processed/**
+backend/datasets/raw_test/**
+backend/datasets/fit_candidates/**
+backend/datasets/annotations/**
 backend/datasets/**/*.jpg
 backend/datasets/**/*.jpeg
 backend/datasets/**/*.png
@@ -26,6 +31,12 @@ backend/datasets/**/*.csv
 !backend/datasets/**/*.example.csv
 
 # Keep dataset folder placeholders
+!backend/datasets/raw/
+!backend/datasets/raw/.gitkeep
+!backend/datasets/processed/
+!backend/datasets/processed/.gitkeep
+!backend/datasets/raw_test/
+!backend/datasets/raw_test/.gitkeep
 !backend/datasets/**/.gitkeep
 
 # Image artifacts
@@ -69,6 +80,7 @@ outputs/**
 !outputs/.gitkeep
 DATA/
 samples_smoke/
+stableviton_raw/
 
 # Hugging Face / cache
 hf-cache/
