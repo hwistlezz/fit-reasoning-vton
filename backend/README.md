@@ -29,6 +29,32 @@ StableVITON 외부 repo, checkpoint, dataset, generated image는 이 저장소�
 | `STABLEVITON_TIMEOUT_SECONDS` | `300` |
 | `STABLEVITON_USE_UNPAIR` | `true` |
 
+## Fit Analyzer 설정
+
+백엔드는 성공 result를 만들 때 먼저 job별 `fit.json`을 찾습니다.
+
+탐색 순서는 다음과 같습니다.
+
+1. `backend/outputs/{job_id}/fit.json`
+2. `FIT_ANALYSIS_ROOT/{job_id}/fit.json`
+3. 없으면 placeholder fit 분석 결과 반환
+
+`FIT_ANALYSIS_ROOT` 기본값은 `backend/datasets/processed/fit_results`입니다. 이 경로는 PC2가 생성할 processed fit result를 로컬에서 연결하기 위한 위치이며, `backend/datasets/processed/**`는 Git에 포함하지 않습니다.
+
+`fit.json`이 있으면 `confidence`, `fit`, `annotations`를 읽어 `/api/result/{job_id}` 응답에 사용합니다. `fit.json`이 없거나 invalid하면 서버를 중단하지 않고 기존 placeholder 결과를 반환합니다.
+
+`docs/examples/fit_result.example.json`은 실제 AIHub 결과가 아닌 loader 검증용 예시입니다.
+
+```powershell
+python -c "from pathlib import Path; from backend.app.services.fit_analyzer import analyze_fit; r=analyze_fit('job_test', '/outputs/job_test/result.png', Path('docs/examples/fit_result.example.json')); print(r.confidence.score); print(r.fit.label); print(r.annotations)"
+```
+
+Conda 환경을 직접 지정해야 하는 경우 다음처럼 실행할 수 있습니다.
+
+```powershell
+D:\conda-envs\vton\python.exe -c "from pathlib import Path; from backend.app.services.fit_analyzer import analyze_fit; r=analyze_fit('job_test', '/outputs/job_test/result.png', Path('docs/examples/fit_result.example.json')); print(r.confidence.score); print(r.fit.label); print(r.annotations)"
+```
+
 ## 설치
 
 ```powershell
@@ -168,7 +194,7 @@ curl.exe http://127.0.0.1:8000/api/result/job_20260527_153000_ab12cd34
     ]
   },
   "annotations": [],
-  "message": "StableVITON result image was generated. Fit analysis is still mocked."
+  "message": "StableVITON result image was generated. Fit analysis was attached when available."
 }
 ```
 
@@ -183,7 +209,7 @@ StableVITON 원본 저장 디렉터리는 job별로 `backend/outputs/stableviton
 
 ## Fit 분석 임시 구현
 
-현재 fit analyzer는 임시 구현입니다. `confidence.score`는 실제 CV 기반 계산값이 아니며, 기본값은 `60`, `level`은 `medium`입니다.
+현재 fit analyzer는 job별 `fit.json`이 있으면 해당 값을 응답에 사용하고, 없거나 invalid하면 placeholder를 반환합니다. placeholder의 `confidence.score`는 실제 CV 기반 계산값이 아니며, 기본값은 `60`, `level`은 `medium`입니다.
 
 현재 level 기준:
 
@@ -191,9 +217,9 @@ StableVITON 원본 저장 디렉터리는 job별로 `backend/outputs/stableviton
 - `40-69`: `medium`
 - `70-100`: `high`
 
-현재 `fit.label`은 `unknown`으로 고정됩니다. `shoulder_ratio`, `torso_width_ratio`, `sleeve_length_ratio`, `garment_length_ratio`는 아직 계산하지 않으며 `null`로 반환합니다.
+placeholder에서는 `fit.label`을 `unknown`으로 반환합니다. `shoulder_ratio`, `torso_width_ratio`, `sleeve_length_ratio`, `garment_length_ratio`는 아직 계산하지 않으며 `null`로 반환합니다.
 
-`annotations`는 현재 빈 배열입니다.
+placeholder fallback의 `annotations`는 빈 배열입니다.
 
 추후 annotation hotspot은 아래 형태를 고려할 수 있지만, 이번 임시 구현에서는 실제 annotation을 생성하지 않습니다.
 
@@ -207,7 +233,7 @@ StableVITON 원본 저장 디렉터리는 job별로 `backend/outputs/stableviton
 }
 ```
 
-실제 fit confidence 계산은 PC3 batch evaluation과 failure case 수집 후 규칙 또는 모델 기반 분석기로 확장합니다.
+실제 fit confidence 계산은 PC3 batch evaluation과 failure case 수집 후 규칙 또는 모델 기반 분석기로 확장합니다. 실제 AIHub raw data와 generated `fit.json`은 Git에 포함하지 않습니다.
 
 ## 현재 범위
 
