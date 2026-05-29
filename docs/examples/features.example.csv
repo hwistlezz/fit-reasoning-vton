@@ -1,0 +1,4 @@
+case_id,model_id,cloth_id,pose,angle,cloth_type,cloth_fit,shoulder_ratio,torso_width_ratio,sleeve_length_ratio,garment_length_ratio,cloth_area_ratio,body_visibility_score,pose_quality_score,segmentation_quality_score,confidence_score,fit_label
+example_case_001,M001,C0001,P01,정면,T-shirt,노멀,1.04,1.08,0.96,1.02,0.34,0.92,0.88,0.9,72,regular
+example_case_002,M002,C0002,P11,정면,Sweater,오버사이즈,1.22,1.3,1.05,1.12,0.48,0.86,0.82,0.87,64,loose
+example_case_003,M003,C0003,P06,좌45도,Jumper,루즈,1.35,1.42,0.9,1.2,0.52,0.74,0.7,0.79,48,low_confidence
