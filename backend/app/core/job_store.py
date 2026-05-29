@@ -9,7 +9,7 @@ from fastapi import UploadFile
 
 from backend.app.core.config import settings
 from backend.app.core.paths import ensure_output_dir
-from backend.app.services.fit_analyzer import analyze_fit_placeholder
+from backend.app.services.fit_analyzer import analyze_fit
 
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -20,7 +20,7 @@ DONE_MESSAGE = "StableVITON inference completed."
 RESULT_PENDING_MESSAGE = (
     "Result image is not available yet because StableVITON inference is queued."
 )
-RESULT_DONE_MESSAGE = "StableVITON result image was generated. Fit analysis is still mocked."
+RESULT_DONE_MESSAGE = "StableVITON result image was generated. Fit analysis was attached when available."
 
 
 class JobStoreError(Exception):
@@ -137,7 +137,7 @@ def write_success_result(job_id: str, result_filename: str = "result.png") -> No
     meta = _read_job_meta(job_id)
     person_url, cloth_url = _image_urls_from_meta(job_id, meta)
     result_image_url = public_output_url(job_id, result_filename)
-    analysis = analyze_fit_placeholder(job_id=job_id, result_image_url=result_image_url).to_response_payload()
+    analysis = analyze_fit(job_id=job_id, result_image_url=result_image_url).to_response_payload()
     result = {
         "job_id": job_id,
         "status": "done",

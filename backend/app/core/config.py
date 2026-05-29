@@ -31,6 +31,12 @@ class Settings:
     api_prefix: str = "/api"
     output_dir: Path = REPO_ROOT / "backend" / "outputs"
     log_dir: Path = REPO_ROOT / "backend" / "logs"
+    fit_analysis_root: Path = field(
+        default_factory=lambda: _env_path(
+            "FIT_ANALYSIS_ROOT",
+            REPO_ROOT / "backend" / "datasets" / "processed" / "fit_results",
+        )
+    )
     stableviton_root: Path = field(
         default_factory=lambda: _env_path("STABLEVITON_ROOT", r"D:\GitHub\StableVITON")
     )
