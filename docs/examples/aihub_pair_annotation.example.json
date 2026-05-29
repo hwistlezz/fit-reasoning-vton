@@ -1,0 +1,7 @@
+[
+  {
+    "from": "/원천데이터/제품/상의/example_cloth.jpg",
+    "to": "/원천데이터/모델/기본의상/example_model.jpg",
+    "result": "/원천데이터/제품 착용/상의/example_result.jpg"
+  }
+]
