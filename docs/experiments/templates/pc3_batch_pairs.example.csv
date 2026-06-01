@@ -1,0 +1,4 @@
+case_id,person_image,cloth_image,mode,expected_note
+case_001,person_001.png,cloth_001.png,unpaired,basic smoke pair
+case_002,person_002.png,cloth_002.png,unpaired,pose variation
+case_003,person_003.png,cloth_003.png,unpaired,fit confidence review candidate

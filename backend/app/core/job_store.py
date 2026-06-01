@@ -9,6 +9,7 @@ from fastapi import UploadFile
 
 from backend.app.core.config import settings
 from backend.app.core.paths import ensure_output_dir
+from backend.app.services.fit_analyzer import analyze_fit
 
 
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -19,7 +20,7 @@ DONE_MESSAGE = "StableVITON inference completed."
 RESULT_PENDING_MESSAGE = (
     "Result image is not available yet because StableVITON inference is queued."
 )
-RESULT_DONE_MESSAGE = "StableVITON result image was generated. Fit analysis is still mocked."
+RESULT_DONE_MESSAGE = "StableVITON result image was generated. Fit analysis was attached when available."
 
 
 class JobStoreError(Exception):
@@ -135,32 +136,17 @@ def write_success_result(job_id: str, result_filename: str = "result.png") -> No
     job_dir = get_existing_job_dir(job_id)
     meta = _read_job_meta(job_id)
     person_url, cloth_url = _image_urls_from_meta(job_id, meta)
+    result_image_url = public_output_url(job_id, result_filename)
+    analysis = analyze_fit(job_id=job_id, result_image_url=result_image_url).to_response_payload()
     result = {
         "job_id": job_id,
         "status": "done",
         "person_image_url": person_url,
         "cloth_image_url": cloth_url,
-        "result_image_url": public_output_url(job_id, result_filename),
-        "confidence": {
-            "score": 70,
-            "level": "medium",
-            "warnings": [
-                "Current fit analysis is mocked. This job only verifies StableVITON result image generation."
-            ],
-        },
-        "fit": {
-            "label": "unknown",
-            "scores": {
-                "shoulder_ratio": None,
-                "torso_width_ratio": None,
-                "sleeve_length_ratio": None,
-                "garment_length_ratio": None,
-            },
-            "explanations": [
-                "StableVITON generated a result image, but the real fit analyzer is not connected yet."
-            ],
-        },
-        "annotations": [],
+        "result_image_url": result_image_url,
+        "confidence": analysis["confidence"],
+        "fit": analysis["fit"],
+        "annotations": analysis["annotations"],
         "message": RESULT_DONE_MESSAGE,
     }
     write_json(job_dir / "result.json", result)

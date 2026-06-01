@@ -7,6 +7,11 @@ from backend.app.core.job_store import (
     write_failed_result,
     write_success_result,
 )
+from backend.app.services.stableviton_input_adapter import (
+    StableVitonInputAdapterError,
+    preflight_required_artifacts,
+    prepare_stableviton_input,
+)
 from backend.app.services.stableviton_service import StableVitonServiceError, run_stableviton_inference
 
 
@@ -24,8 +29,13 @@ def run_tryon_job(job_id: str) -> None:
 
     try:
         mark_job_running(job_id)
-        run_result = run_stableviton_inference(job_id, job_dir)
+        stableviton_input = prepare_stableviton_input(job_id)
+        preflight_required_artifacts(stableviton_input)
+        run_result = run_stableviton_inference(job_id, job_dir, data_root=stableviton_input.data_root)
         write_success_result(job_id, run_result.result_path.name)
+    except StableVitonInputAdapterError as exc:
+        _write_error_logs_if_missing(job_dir, exc.code, exc.message)
+        write_failed_result(job_id, exc.code, exc.message)
     except StableVitonServiceError as exc:
         _write_error_logs_if_missing(job_dir, exc.code, exc.message)
         write_failed_result(job_id, exc.code, exc.message)
