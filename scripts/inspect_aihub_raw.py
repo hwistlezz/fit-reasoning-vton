@@ -1,145 +1,156 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Inspect AIHub raw dataset folder.
+
+This version ignores duplicate/temporary folders such as:
+- ddd
+- _ignore_ddd
+- __MACOSX
+
+Usage:
+python scripts\inspect_aihub_raw.py ^
+  --input "backend\datasets\raw\aihub\011.쉐이프리스 의류 및 포즈 데이터\01-1.정식개방데이터" ^
+  --output backend\datasets\processed\index\raw_structure_report_full.json
+"""
 from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+JSON_EXTS = {".json"}
 
-TYPE_COUNTS = {
-    "wearing_annotation": 0,
-    "pair_annotation": 0,
-    "unknown": 0,
+EXCLUDE_DIR_NAMES = {
+    "ddd",
+    "_ignore_ddd",
+    "__MACOSX",
 }
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Inspect AIHub annotation JSON files and summarize their structure."
-    )
-    parser.add_argument("--input", required=True, help="JSON file or directory containing JSON files.")
-    parser.add_argument("--output", required=True, help="Path to save report.json.")
-    parser.add_argument("--limit", type=int, default=None, help="Only inspect the first N JSON files.")
-    args = parser.parse_args()
-
-    input_path = Path(args.input)
-    if not input_path.exists():
-        parser.error(f"--input does not exist: {input_path}")
-    if args.limit is not None and args.limit < 0:
-        parser.error("--limit must be zero or a positive integer.")
-
-    return args
+def is_excluded(path: Path) -> bool:
+    return any(part in EXCLUDE_DIR_NAMES for part in path.parts)
 
 
-def find_json_files(input_path: Path, limit: int | None) -> list[Path]:
-    if input_path.is_file():
-        files = [input_path] if input_path.suffix.lower() == ".json" else []
-    else:
-        files = sorted(path for path in input_path.rglob("*.json") if path.is_file())
-
-    if limit is not None:
-        return files[:limit]
-    return files
+def iter_files(root: Path):
+    for p in root.rglob("*"):
+        if is_excluded(p):
+            continue
+        if p.is_file():
+            yield p
 
 
-def display_path(path: Path) -> str:
-    try:
-        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
-    except ValueError:
-        return path.as_posix()
-
-
-def first_dict(value: Any) -> dict[str, Any]:
-    if isinstance(value, list) and value and isinstance(value[0], dict):
-        return value[0]
-    return {}
-
-
-def pair_records(payload: Any) -> list[dict[str, Any]]:
-    if isinstance(payload, list):
-        candidates = payload
-    elif isinstance(payload, dict):
-        candidates = []
-        for key in ("pairs", "pair", "annotations", "annotation", "data", "items"):
-            value = payload.get(key)
-            if isinstance(value, list):
-                candidates.extend(value)
-        if not candidates:
-            for value in payload.values():
-                if isinstance(value, list):
-                    candidates.extend(value)
-    else:
-        return []
-
-    return [
-        item
-        for item in candidates
-        if isinstance(item, dict)
-        and all(isinstance(item.get(key), str) and item.get(key) for key in ("from", "to", "result"))
-    ]
-
-
-def is_wearing_annotation(payload: Any) -> bool:
-    if not isinstance(payload, dict):
-        return False
-
-    info = first_dict(payload.get("info"))
-    annotation = first_dict(payload.get("annotation"))
-    has_identity = bool(info.get("model_id") or info.get("cloth_id"))
-    has_annotation = "segmentation" in annotation or "keypoint" in annotation
-    return has_identity and has_annotation
-
-
-def infer_annotation_type(payload: Any) -> str:
-    if pair_records(payload):
-        return "pair_annotation"
-    if is_wearing_annotation(payload):
-        return "wearing_annotation"
-    return "unknown"
-
-
-def inspect_files(json_files: list[Path]) -> dict[str, Any]:
-    type_counts = dict(TYPE_COUNTS)
-    parsed_files = 0
-    failed_files = 0
-    samples: list[dict[str, str]] = []
-    errors: list[dict[str, str]] = []
-
-    for path in json_files:
+def safe_read_json(path: Path) -> Any | None:
+    for enc in ("utf-8-sig", "utf-8", "cp949"):
         try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-            annotation_type = infer_annotation_type(payload)
-            parsed_files += 1
-            type_counts[annotation_type] += 1
-            samples.append({"path": display_path(path), "type": annotation_type})
-        except (OSError, json.JSONDecodeError) as exc:
-            failed_files += 1
-            errors.append({"path": display_path(path), "error": str(exc)})
+            with path.open("r", encoding=enc) as f:
+                return json.load(f)
+        except Exception:
+            continue
+    return None
 
-    return {
-        "total_json_files": len(json_files),
-        "parsed_files": parsed_files,
-        "failed_files": failed_files,
-        "type_counts": type_counts,
-        "samples": samples,
-        "errors": errors,
-    }
+
+def get_size_bytes(root: Path) -> int:
+    total = 0
+    for p in iter_files(root):
+        try:
+            total += p.stat().st_size
+        except OSError:
+            pass
+    return total
 
 
 def main() -> None:
-    args = parse_args()
-    input_path = Path(args.input)
-    output_path = Path(args.output)
-    json_files = find_json_files(input_path, args.limit)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", required=True, help="AIHub raw root")
+    parser.add_argument("--output", required=True, help="Output report json")
+    parser.add_argument("--max-samples", type=int, default=20)
+    args = parser.parse_args()
+
+    root = Path(args.input)
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    if not root.exists():
+        raise FileNotFoundError(f"Input root does not exist: {root}")
+
+    file_ext_counts = Counter()
+    image_files: list[str] = []
+    json_files: list[str] = []
+    top_dirs = []
+
+    for child in sorted(root.iterdir()):
+        if is_excluded(child):
+            continue
+        if child.is_dir():
+            top_dirs.append(str(child.relative_to(root)))
+
+    for p in iter_files(root):
+        ext = p.suffix.lower()
+        file_ext_counts[ext] += 1
+        if ext in IMAGE_EXTS and len(image_files) < args.max_samples:
+            image_files.append(str(p.relative_to(root)))
+        elif ext in JSON_EXTS and len(json_files) < args.max_samples:
+            json_files.append(str(p.relative_to(root)))
+
+    json_samples = []
+    for rel in json_files[: min(5, len(json_files))]:
+        p = root / rel
+        obj = safe_read_json(p)
+        if isinstance(obj, dict):
+            json_samples.append(
+                {
+                    "path": rel,
+                    "top_keys": list(obj.keys())[:30],
+                    "preview": {k: str(v)[:300] for k, v in list(obj.items())[:5]},
+                }
+            )
+        elif isinstance(obj, list):
+            json_samples.append(
+                {
+                    "path": rel,
+                    "type": "list",
+                    "length": len(obj),
+                    "first_item_type": type(obj[0]).__name__ if obj else None,
+                    "first_item_keys": list(obj[0].keys())[:30] if obj and isinstance(obj[0], dict) else None,
+                }
+            )
+        else:
+            json_samples.append({"path": rel, "type": type(obj).__name__})
+
+    dir_counts_by_depth = defaultdict(int)
+    for p in root.rglob("*"):
+        if is_excluded(p):
+            continue
+        if p.is_dir():
+            depth = len(p.relative_to(root).parts)
+            dir_counts_by_depth[str(depth)] += 1
 
     report = {
-        "input": display_path(input_path),
-        **inspect_files(json_files),
+        "raw_root": str(root.resolve()),
+        "ignored_dir_names": sorted(EXCLUDE_DIR_NAMES),
+        "exists": root.exists(),
+        "total_size_gb": round(get_size_bytes(root) / (1024**3), 3),
+        "num_files": sum(file_ext_counts.values()),
+        "num_images": sum(file_ext_counts[e] for e in IMAGE_EXTS),
+        "num_json": file_ext_counts[".json"],
+        "file_ext_counts": dict(file_ext_counts.most_common()),
+        "top_level_dirs": top_dirs,
+        "dir_counts_by_depth": dict(dir_counts_by_depth),
+        "image_samples": image_files,
+        "json_samples": json_samples,
     }
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"Wrote report: {output_path}")
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[OK] wrote report: {out}")
+    print(json.dumps(
+        {k: report[k] for k in ["num_images", "num_json", "total_size_gb", "top_level_dirs", "ignored_dir_names"]},
+        ensure_ascii=False,
+        indent=2,
+    ))
 
 
 if __name__ == "__main__":

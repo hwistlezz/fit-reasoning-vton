@@ -1,87 +1,34 @@
-# Python
-__pycache__/
-*.pyc
-.venv/
-.env
-.env.*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# External repositories
-StableVITON/
-IDM-VTON/
-CatVTON/
-
-# Dataset image/data artifacts
+# PC2 raw / processed datasets
 backend/datasets/raw/**
 backend/datasets/processed/**
-backend/datasets/raw_test/**
-backend/datasets/fit_candidates/**
-backend/datasets/annotations/**
-backend/datasets/**/*.jpg
-backend/datasets/**/*.jpeg
-backend/datasets/**/*.png
-backend/datasets/**/*.webp
-backend/datasets/**/*.bmp
-backend/datasets/**/*.csv
+backend/datasets/failure_cases/**
+backend/datasets/contact_sheets/**
+backend/datasets/features.csv
+backend/datasets/test_cases.csv
 
-# Allow example CSV files
-!backend/datasets/**/*.example.csv
+# AIHub archives / extracted large data
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.rar
 
-# Keep dataset folder placeholders
+# Large generated dataset artifacts
+backend/datasets/**/*.json
+backend/datasets/**/*.npy
+backend/datasets/**/*.npz
+backend/datasets/**/*.pkl
+backend/datasets/**/*.parquet
+
+# Keep placeholders only
+!backend/datasets/
+!backend/datasets/.gitkeep
 !backend/datasets/raw/
 !backend/datasets/raw/.gitkeep
 !backend/datasets/processed/
 !backend/datasets/processed/.gitkeep
-!backend/datasets/raw_test/
-!backend/datasets/raw_test/.gitkeep
-!backend/datasets/**/.gitkeep
-
-# Image artifacts
-*.jpg
-*.jpeg
-*.png
-*.webp
-
-# Models / checkpoints
-checkpoints/
-backend/models/**
-backend/checkpoints/**
-*.ckpt
-*.pth
-*.pt
-*.safetensors
-*.onnx
-*.pkl
-
-!backend/models/
-!backend/models/.gitkeep
-!backend/models/dwpose/
-!backend/models/dwpose/.gitkeep
-!backend/models/schp/
-!backend/models/schp/.gitkeep
-
-# Backend generated outputs / logs
-backend/outputs/**
-!backend/outputs/
-!backend/outputs/.gitkeep
-
-backend/logs/**
-!backend/logs/
-!backend/logs/.gitkeep
-
-*.log
-
-# Root generated outputs
-outputs/**
-!outputs/
-!outputs/.gitkeep
-DATA/
-samples_smoke/
-stableviton_raw/
-
-# Hugging Face / cache
-hf-cache/
-.cache/
+!backend/datasets/failure_cases/
+!backend/datasets/failure_cases/.gitkeep
+!backend/datasets/contact_sheets/
+!backend/datasets/contact_sheets/.gitkeep
