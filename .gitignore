@@ -1,6 +1,21 @@
+# Python / local tooling
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
 # PC2 raw / processed datasets
 backend/datasets/raw/**
 backend/datasets/processed/**
+backend/datasets/raw_test/**
+backend/datasets/fit_candidates/**
+backend/datasets/annotations/**
 backend/datasets/failure_cases/**
 backend/datasets/contact_sheets/**
 backend/datasets/features.csv
@@ -20,6 +35,11 @@ backend/datasets/**/*.npy
 backend/datasets/**/*.npz
 backend/datasets/**/*.pkl
 backend/datasets/**/*.parquet
+backend/datasets/**/*.jpg
+backend/datasets/**/*.jpeg
+backend/datasets/**/*.png
+backend/datasets/**/*.webp
+backend/datasets/**/*.bmp
 
 # Keep placeholders only
 !backend/datasets/
@@ -28,7 +48,32 @@ backend/datasets/**/*.parquet
 !backend/datasets/raw/.gitkeep
 !backend/datasets/processed/
 !backend/datasets/processed/.gitkeep
+!backend/datasets/raw_test/
+!backend/datasets/raw_test/.gitkeep
 !backend/datasets/failure_cases/
 !backend/datasets/failure_cases/.gitkeep
 !backend/datasets/contact_sheets/
 !backend/datasets/contact_sheets/.gitkeep
+
+# Backend generated outputs / logs
+backend/outputs/**
+backend/logs/**
+!backend/outputs/
+!backend/outputs/.gitkeep
+!backend/logs/
+!backend/logs/.gitkeep
+
+# Generated images / checkpoints
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.ckpt
+*.pth
+*.pt
+*.safetensors
+
+# Root generated outputs / external data
+DATA/**
+samples_smoke/**
+stableviton_raw/**
