@@ -43,10 +43,32 @@ StableVITON 외부 repo, checkpoint, dataset, generated image는 이 저장소�
 
 `fit.json`이 있으면 `confidence`, `fit`, `annotations`를 읽어 `/api/result/{job_id}` 응답에 사용합니다. `fit.json`이 없거나 invalid하면 서버를 중단하지 않고 기존 placeholder 결과를 반환합니다.
 
-`docs/examples/fit_result.example.json`은 실제 AIHub 결과가 아닌 loader 검증용 예시입니다.
+fit analyzer loader는 두 가지 fit result 형식을 지원합니다.
+
+1. backend-compatible fit result format
+   - `confidence.score`
+   - `confidence.level`
+   - `fit.label`
+   - `fit.scores`
+   - `annotations`
+2. PC2 `batch_fit_features.py` compact format
+   - `confidence: number`
+   - `fit_label`
+   - `features`
+   - `annotations`
+
+PC2 compact format은 confidence number를 `confidence.score`와 `confidence.level`로 변환하고, `fit_label`과 `features`를 각각 `fit.label`, `fit.scores`로 normalize합니다. `annotations`는 backend annotation schema와 같은 `key`, `label`, `text`, `x`, `y`, `value` 형식을 우선 그대로 사용하고, `part`, `message`, `severity` 형식도 기존 annotation schema로 변환합니다.
+
+`docs/examples/fit_result.example.json`과 `docs/examples/pc2_fit_result.example.json`은 실제 AIHub 결과가 아닌 loader 검증용 예시입니다.
 
 ```powershell
 python -c "from pathlib import Path; from backend.app.services.fit_analyzer import analyze_fit; r=analyze_fit('job_test', '/outputs/job_test/result.png', Path('docs/examples/fit_result.example.json')); print(r.confidence.score); print(r.fit.label); print(r.annotations)"
+```
+
+PC2 compact format 검증:
+
+```powershell
+python -c "from pathlib import Path; from backend.app.services.fit_analyzer import analyze_fit; r=analyze_fit('job_test', '/outputs/job_test/result.png', Path('docs/examples/pc2_fit_result.example.json')); print(r.confidence.score); print(r.fit.label); print(r.annotations)"
 ```
 
 Conda 환경을 직접 지정해야 하는 경우 다음처럼 실행할 수 있습니다.

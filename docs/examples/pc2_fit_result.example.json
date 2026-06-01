@@ -1,0 +1,25 @@
+{
+  "pair_id": "P00000001",
+  "fit_label": "regular",
+  "confidence": 75.0,
+  "features": {
+    "shoulder_ratio": 1.04,
+    "torso_width_ratio": 1.08,
+    "sleeve_length_ratio": 1.0,
+    "garment_length_ratio": 1.02,
+    "pose_quality": 0.9,
+    "parsing_quality": 0.8,
+    "body_visibility": 0.85,
+    "quality_score": 0.82
+  },
+  "annotations": [
+    {
+      "key": "shoulder",
+      "label": "어깨",
+      "text": "어깨선과 신체 어깨 위치를 비교합니다.",
+      "x": 50.0,
+      "y": 27.0,
+      "value": 1.04
+    }
+  ]
+}

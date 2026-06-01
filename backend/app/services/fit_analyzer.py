@@ -27,7 +27,7 @@ ANNOTATION_LABELS = {
 
 @dataclass(frozen=True)
 class ConfidenceResult:
-    score: int
+    score: int | float
     level: str
     warnings: list[str]
 
@@ -49,7 +49,7 @@ class FitAnalysisResult:
         return asdict(self)
 
 
-def confidence_level_for_score(score: int) -> str:
+def confidence_level_for_score(score: int | float) -> str:
     if score < 40:
         return "low"
     if score < 70:
@@ -117,6 +117,17 @@ def _load_fit_result(path: Path) -> FitAnalysisResult:
     if not isinstance(payload, dict):
         raise ValueError("fit result payload must be an object.")
 
+    if _is_pc2_compact_fit_result(payload):
+        return _load_pc2_compact_fit_result(payload)
+
+    return _load_backend_compatible_fit_result(payload)
+
+
+def _is_pc2_compact_fit_result(payload: dict[str, Any]) -> bool:
+    return isinstance(payload.get("confidence"), int | float) and "fit_label" in payload and "features" in payload
+
+
+def _load_backend_compatible_fit_result(payload: dict[str, Any]) -> FitAnalysisResult:
     confidence_payload = _require_dict(payload.get("confidence"), "confidence")
     fit_payload = _require_dict(payload.get("fit"), "fit")
     annotations_payload = payload.get("annotations", [])
@@ -125,6 +136,20 @@ def _load_fit_result(path: Path) -> FitAnalysisResult:
 
     confidence = _parse_confidence(confidence_payload)
     fit = _parse_fit(fit_payload)
+    annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
+    annotations = [annotation for annotation in annotations if annotation is not None]
+
+    return FitAnalysisResult(confidence=confidence, fit=fit, annotations=annotations)
+
+
+def _load_pc2_compact_fit_result(payload: dict[str, Any]) -> FitAnalysisResult:
+    features_payload = _require_dict(payload.get("features"), "features")
+    annotations_payload = payload.get("annotations", [])
+    if not isinstance(annotations_payload, list):
+        raise ValueError("annotations must be a list.")
+
+    confidence = _parse_compact_confidence(payload.get("confidence"))
+    fit = _parse_compact_fit(payload.get("fit_label"), features_payload)
     annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
     annotations = [annotation for annotation in annotations if annotation is not None]
 
@@ -153,6 +178,21 @@ def _parse_confidence(payload: dict[str, Any]) -> ConfidenceResult:
     return ConfidenceResult(score=score, level=level, warnings=warnings)
 
 
+def _parse_compact_confidence(score: Any) -> ConfidenceResult:
+    if not isinstance(score, int | float):
+        raise ValueError("confidence must be numeric.")
+
+    return ConfidenceResult(score=score, level=_compact_confidence_level(score), warnings=[])
+
+
+def _compact_confidence_level(score: int | float) -> str:
+    if score < 50:
+        return "low"
+    if score < 80:
+        return "medium"
+    return "high"
+
+
 def _parse_fit(payload: dict[str, Any]) -> FitResult:
     label = payload.get("label")
     if not isinstance(label, str):
@@ -171,6 +211,17 @@ def _parse_fit(payload: dict[str, Any]) -> FitResult:
         scores[key] = _optional_number(scores_payload.get(key), f"fit.scores.{key}")
 
     return FitResult(label=label, scores=scores, explanations=explanations)
+
+
+def _parse_compact_fit(label: Any, features: dict[str, Any]) -> FitResult:
+    if not isinstance(label, str):
+        raise ValueError("fit_label must be a string.")
+
+    scores: dict[str, float | None] = {}
+    for key in FIT_SCORE_KEYS:
+        scores[key] = _optional_number(features.get(key), f"features.{key}")
+
+    return FitResult(label=label, scores=scores, explanations=[])
 
 
 def _parse_annotation(payload: Any) -> dict[str, Any] | None:
