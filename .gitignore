@@ -59,6 +59,7 @@ backend/datasets/**/*.bmp
 !backend/datasets/contact_sheets/.gitkeep
 
 # Backend generated outputs / logs
+backend/training/outputs/**
 backend/outputs/**
 backend/logs/**
 !backend/outputs/
