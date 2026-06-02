@@ -19,7 +19,10 @@ backend/datasets/annotations/**
 backend/datasets/failure_cases/**
 backend/datasets/contact_sheets/**
 backend/datasets/features.csv
+backend/datasets/features_*.csv
+backend/datasets/*_failures.csv
 backend/datasets/test_cases.csv
+backend/datasets/lora_pilot_aihub_*/
 
 # AIHub archives / extracted large data
 *.zip
