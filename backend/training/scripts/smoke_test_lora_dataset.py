@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from backend.training.datasets.aihub_lora_dataset import AihubLoraPilotDataset
+from backend.training.datasets.aihub_lora_dataset import ARTIFACT_PATH_PATTERNS, AihubLoraPilotDataset
 
 
 DEFAULT_DATA_ROOT = Path("backend/datasets/lora_pilot_aihub_1k")
@@ -35,13 +35,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-json", type=Path, default=DEFAULT_SUMMARY_JSON)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--check-backend-loader", action="store_true")
-    return parser.parse_args()
+    parser.add_argument("--required-artifacts", nargs="*", choices=sorted(ARTIFACT_PATH_PATTERNS), default=[])
+    parser.add_argument("--optional-artifacts", nargs="*", choices=sorted(ARTIFACT_PATH_PATTERNS), default=[])
+
+    args = parser.parse_args()
+    args.required_artifacts = _dedupe(args.required_artifacts)
+    args.optional_artifacts = [
+        artifact_name for artifact_name in _dedupe(args.optional_artifacts)
+        if artifact_name not in set(args.required_artifacts)
+    ]
+    return args
 
 
 def main() -> int:
     args = parse_args()
     dataset = AihubLoraPilotDataset(args.data_root)
     checked_count = _checked_count(len(dataset), args.limit)
+    artifact_summary = _init_artifact_summary(args.required_artifacts, args.optional_artifacts)
 
     summary: dict[str, Any] = {
         "data_root": _display_path(args.data_root),
@@ -59,7 +69,12 @@ def main() -> int:
         "backend_loader_checked": bool(args.check_backend_loader),
         "seed": args.seed,
         "sample_contact_sheet": _display_path(args.contact_sheet),
+        "required_artifacts": args.required_artifacts,
+        "optional_artifacts": args.optional_artifacts,
+        "artifact_summary": artifact_summary,
+        "artifact_errors": 0,
     }
+    required_artifacts = set(args.required_artifacts)
 
     for index in range(checked_count):
         sample = dataset[index]
@@ -69,6 +84,8 @@ def main() -> int:
         _check_fit_json_load(dataset, index, summary)
         if args.check_backend_loader:
             _check_backend_loader(sample, summary)
+        if artifact_summary:
+            _check_artifacts(dataset, index, required_artifacts, summary)
 
     _write_contact_sheet(dataset, checked_count, args.sample_count, args.seed, args.contact_sheet, summary)
     _write_summary(args.summary_json, summary)
@@ -81,6 +98,26 @@ def _checked_count(manifest_count: int, limit: int) -> int:
     if limit < 0:
         raise ValueError("--limit must be non-negative.")
     return min(manifest_count, limit)
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    for value in values:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
+
+
+def _init_artifact_summary(required_artifacts: list[str], optional_artifacts: list[str]) -> dict[str, dict[str, Any]]:
+    return {
+        artifact_name: {
+            "required": artifact_name in required_artifacts,
+            "checked": 0,
+            "missing": 0,
+            "load_errors": 0,
+        }
+        for artifact_name in [*required_artifacts, *optional_artifacts]
+    }
 
 
 def _check_required_metadata(sample: dict[str, Any], summary: dict[str, Any]) -> None:
@@ -140,6 +177,51 @@ def _check_backend_loader(sample: dict[str, Any], summary: dict[str, Any]) -> No
         )
     except Exception:
         summary["backend_loader_errors"] += 1
+
+
+def _check_artifacts(
+    dataset: AihubLoraPilotDataset,
+    index: int,
+    required_artifacts: set[str],
+    summary: dict[str, Any],
+) -> None:
+    artifact_candidates = dataset.get_artifact_candidates(index)
+    artifact_summary = summary["artifact_summary"]
+
+    for artifact_name, artifact_result in artifact_summary.items():
+        artifact_result["checked"] += 1
+        candidates = artifact_candidates[artifact_name]
+        artifact_path = _first_existing_path(candidates)
+
+        if artifact_path is None:
+            artifact_result["missing"] += 1
+            if artifact_name in required_artifacts:
+                summary["artifact_errors"] += 1
+            continue
+
+        try:
+            _load_artifact(artifact_name, artifact_path)
+        except (OSError, json.JSONDecodeError, ValueError):
+            artifact_result["load_errors"] += 1
+            summary["artifact_errors"] += 1
+
+
+def _first_existing_path(candidates: tuple[Path, ...]) -> Path | None:
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _load_artifact(artifact_name: str, artifact_path: Path) -> None:
+    if artifact_name == "openpose-json":
+        payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"openpose artifact must be an object: {artifact_path}")
+        return
+
+    with Image.open(artifact_path) as image:
+        image.convert("RGB").load()
 
 
 def _write_contact_sheet(
@@ -224,6 +306,7 @@ def _is_success(summary: dict[str, Any]) -> bool:
         "backend_loader_errors",
         "metadata_errors",
         "contact_sheet_errors",
+        "artifact_errors",
     )
     return all(summary[key] == 0 for key in error_keys)
 

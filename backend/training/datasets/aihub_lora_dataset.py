@@ -7,6 +7,25 @@ from typing import Any
 from PIL import Image
 
 
+ARTIFACT_PATH_PATTERNS: dict[str, tuple[str, ...]] = {
+    "openpose-json": (
+        "openpose-json/{pair_id}_keypoints.json",
+        "openpose-json/{pair_id}.json",
+    ),
+    "image-parse": ("image-parse/{pair_id}.png",),
+    "cloth-mask": ("cloth-mask/{pair_id}.png",),
+    "agnostic-v3.2": (
+        "agnostic-v3.2/{pair_id}.png",
+        "agnostic-v3.2/{pair_id}.jpg",
+    ),
+    "agnostic-mask": ("agnostic-mask/{pair_id}.png",),
+    "image-densepose": (
+        "image-densepose/{pair_id}.jpg",
+        "image-densepose/{pair_id}.png",
+    ),
+}
+
+
 class AihubLoraPilotDataset:
     """Torch-free loader for the PC2 AIHub LoRA pilot dataset."""
 
@@ -45,6 +64,24 @@ class AihubLoraPilotDataset:
             "cloth_path": self.data_root / "cloth" / f"{pair_id}.jpg",
             "worn_path": self.data_root / "worn" / f"{pair_id}.jpg",
             "fit_json_path": self.data_root / "fit" / f"{pair_id}.json",
+        }
+
+    def get_artifact_paths(self, index: int) -> dict[str, Path]:
+        row = self._rows[index]
+        pair_id = self._require_pair_id(row, index)
+
+        return {
+            artifact_name: self._resolve_artifact_path(pair_id, patterns)
+            for artifact_name, patterns in ARTIFACT_PATH_PATTERNS.items()
+        }
+
+    def get_artifact_candidates(self, index: int) -> dict[str, tuple[Path, ...]]:
+        row = self._rows[index]
+        pair_id = self._require_pair_id(row, index)
+
+        return {
+            artifact_name: tuple(self.data_root / pattern.format(pair_id=pair_id) for pattern in patterns)
+            for artifact_name, patterns in ARTIFACT_PATH_PATTERNS.items()
         }
 
     def load_sample(self, index: int) -> dict[str, Any]:
@@ -96,3 +133,10 @@ class AihubLoraPilotDataset:
         if not isinstance(payload, dict):
             raise ValueError(f"fit json must be an object: {path}")
         return payload
+
+    def _resolve_artifact_path(self, pair_id: str, patterns: tuple[str, ...]) -> Path:
+        candidates = tuple(self.data_root / pattern.format(pair_id=pair_id) for pattern in patterns)
+        for candidate in candidates:
+            if candidate.is_file():
+                return candidate
+        return candidates[0]
