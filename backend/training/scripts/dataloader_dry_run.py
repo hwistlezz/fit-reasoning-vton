@@ -21,13 +21,19 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Dry-run the AIHub LoRA PyTorch DataLoader.")
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
     parser.add_argument("--limit", type=int, default=512)
-    parser.add_argument("--batch-sizes", type=int, nargs="+", default=[1, 2])
+    parser.add_argument("--batch-sizes", type=int, nargs="+", default=None)
+    parser.add_argument("--batch-size", type=int, action="append", dest="batch_size_aliases", default=[])
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--image-height", type=int, default=512)
     parser.add_argument("--image-width", type=int, default=384)
+    parser.add_argument("--image-size", type=int, nargs=2, metavar=("HEIGHT", "WIDTH"))
     parser.add_argument("--summary-json", type=Path, default=DEFAULT_SUMMARY_JSON)
     parser.add_argument("--device", choices=("cuda", "cpu", "auto"), default="cuda")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.image_size is not None:
+        args.image_height, args.image_width = args.image_size
+    args.batch_sizes = _resolve_batch_sizes(args.batch_sizes, args.batch_size_aliases)
+    return args
 
 
 def main() -> int:
@@ -109,6 +115,18 @@ def _validate_inputs(args: argparse.Namespace) -> bool:
         print(f"manifest.jsonl not found: {args.data_root / 'manifest.jsonl'}", file=sys.stderr)
         return False
     return True
+
+
+def _resolve_batch_sizes(batch_sizes: list[int] | None, batch_size_aliases: list[int]) -> list[int]:
+    values = batch_sizes if batch_sizes is not None else batch_size_aliases
+    if not values:
+        values = [1, 2]
+
+    deduped: list[int] = []
+    for value in values:
+        if value not in deduped:
+            deduped.append(value)
+    return deduped
 
 
 def _import_torch_runtime() -> tuple[Any, Any, Any, Any]:

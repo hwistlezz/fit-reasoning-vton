@@ -18,7 +18,10 @@ ARTIFACT_PATH_PATTERNS: dict[str, tuple[str, ...]] = {
         "agnostic-v3.2/{pair_id}.png",
         "agnostic-v3.2/{pair_id}.jpg",
     ),
-    "agnostic-mask": ("agnostic-mask/{pair_id}.png",),
+    "agnostic-mask": (
+        "agnostic-mask/{pair_id}.png",
+        "agnostic-mask/{pair_id}_mask.png",
+    ),
     "image-densepose": (
         "image-densepose/{pair_id}.jpg",
         "image-densepose/{pair_id}.png",
