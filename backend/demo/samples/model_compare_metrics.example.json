@@ -1,0 +1,59 @@
+{
+  "EP00000000": [
+    {
+      "key": "pose_robustness",
+      "title": "Pose robustness",
+      "description": "Demo metric for model stability under the selected pose.",
+      "baseline_label": "StableVITON Original",
+      "method_label": "AIHub 10k Artifact Fine-tuned",
+      "baseline_value": 0.74,
+      "method_value": 0.86,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.12 demo score"
+    },
+    {
+      "key": "occlusion_handling",
+      "title": "Occlusion handling",
+      "description": "Demo metric for handling body and garment occlusion regions.",
+      "baseline_label": "StableVITON Original",
+      "method_label": "AIHub 10k Artifact Fine-tuned",
+      "baseline_value": 0.68,
+      "method_value": 0.81,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.13 demo score"
+    },
+    {
+      "key": "garment_preservation",
+      "title": "Garment preservation",
+      "description": "Demo metric for preserving garment identity.",
+      "baseline_label": "StableVITON Original",
+      "method_label": "AIHub 10k Artifact Fine-tuned",
+      "baseline_value": 0.77,
+      "method_value": 0.86,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.09 demo score"
+    },
+    {
+      "key": "boundary_quality",
+      "title": "Boundary quality",
+      "description": "Demo metric for cleaner garment-person boundaries.",
+      "baseline_label": "StableVITON Original",
+      "method_label": "AIHub 10k Artifact Fine-tuned",
+      "baseline_value": 0.72,
+      "method_value": 0.84,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.12 demo score"
+    },
+    {
+      "key": "failure_case_reduction",
+      "title": "Failure case reduction",
+      "description": "Demo metric where lower values indicate fewer visible failure cases.",
+      "baseline_label": "StableVITON Original",
+      "method_label": "AIHub 10k Artifact Fine-tuned",
+      "baseline_value": 0.31,
+      "method_value": 0.17,
+      "direction": "lower_is_better",
+      "improvement_text": "-0.14 demo score"
+    }
+  ]
+}

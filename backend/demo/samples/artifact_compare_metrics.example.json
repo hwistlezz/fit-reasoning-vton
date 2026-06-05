@@ -1,0 +1,59 @@
+{
+  "EP00000000": [
+    {
+      "key": "clothing_boundary",
+      "title": "Clothing boundary",
+      "description": "Demo metric for comparing sleeve and torso boundary stability.",
+      "baseline_label": "10k Basic LoRA",
+      "method_label": "10k Artifact LoRA",
+      "baseline_value": 0.71,
+      "method_value": 0.84,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.13 demo score"
+    },
+    {
+      "key": "pose_alignment",
+      "title": "Pose alignment",
+      "description": "Demo metric for pose-conditioned garment placement.",
+      "baseline_label": "10k Basic LoRA",
+      "method_label": "10k Artifact LoRA",
+      "baseline_value": 0.76,
+      "method_value": 0.87,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.11 demo score"
+    },
+    {
+      "key": "body_distortion",
+      "title": "Body distortion",
+      "description": "Demo metric where lower values indicate fewer visible body distortions.",
+      "baseline_label": "10k Basic LoRA",
+      "method_label": "10k Artifact LoRA",
+      "baseline_value": 0.29,
+      "method_value": 0.16,
+      "direction": "lower_is_better",
+      "improvement_text": "-0.13 demo score"
+    },
+    {
+      "key": "failure_risk",
+      "title": "Failure risk",
+      "description": "Demo metric for expected qualitative failure risk.",
+      "baseline_label": "10k Basic LoRA",
+      "method_label": "10k Artifact LoRA",
+      "baseline_value": 0.34,
+      "method_value": 0.18,
+      "direction": "lower_is_better",
+      "improvement_text": "-0.16 demo score"
+    },
+    {
+      "key": "garment_preservation",
+      "title": "Garment preservation",
+      "description": "Demo metric for preserving the uploaded clothing texture and silhouette.",
+      "baseline_label": "10k Basic LoRA",
+      "method_label": "10k Artifact LoRA",
+      "baseline_value": 0.73,
+      "method_value": 0.85,
+      "direction": "higher_is_better",
+      "improvement_text": "+0.12 demo score"
+    }
+  ]
+}

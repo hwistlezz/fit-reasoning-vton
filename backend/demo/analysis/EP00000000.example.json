@@ -1,0 +1,91 @@
+{
+  "fit": {
+    "label": "regular",
+    "confidence": 0.92,
+    "explanation": "Demo fit explanation for a regular upper-body garment. This value is illustrative only.",
+    "scores": {
+      "shoulder_ratio": 0.94,
+      "torso_width_ratio": 1.02,
+      "sleeve_length_ratio": 0.97,
+      "garment_length_ratio": 1.01
+    }
+  },
+  "pose": {
+    "type": "standing_frontal",
+    "confidence": 0.89,
+    "visibility": {
+      "left_shoulder": 0.91,
+      "right_shoulder": 0.9,
+      "left_wrist": 0.78,
+      "right_wrist": 0.8
+    }
+  },
+  "hotspots": [
+    {
+      "key": "shoulder",
+      "label": "Shoulder",
+      "text": "Shoulder seam alignment is expected to stay within the regular range.",
+      "x": 45.0,
+      "y": 22.0,
+      "value": 0.94
+    },
+    {
+      "key": "sleeve",
+      "label": "Sleeve",
+      "text": "Sleeve length is close to the target worn reference.",
+      "x": 67.0,
+      "y": 47.0,
+      "value": 0.97
+    },
+    {
+      "key": "torso",
+      "label": "Torso",
+      "text": "Torso width is marked as regular with no severe compression signal.",
+      "x": 50.0,
+      "y": 52.0,
+      "value": 1.02
+    },
+    {
+      "key": "length",
+      "label": "Length",
+      "text": "Garment length is close to the expected hem position.",
+      "x": 50.0,
+      "y": 75.0,
+      "value": 1.01
+    }
+  ],
+  "keypoints": [
+    {
+      "name": "left_shoulder",
+      "x": 39.0,
+      "y": 23.0,
+      "confidence": 0.91
+    },
+    {
+      "name": "right_shoulder",
+      "x": 61.0,
+      "y": 23.5,
+      "confidence": 0.9
+    },
+    {
+      "name": "left_hip",
+      "x": 43.0,
+      "y": 68.0,
+      "confidence": 0.86
+    },
+    {
+      "name": "right_hip",
+      "x": 58.0,
+      "y": 68.5,
+      "confidence": 0.85
+    }
+  ],
+  "reliability": {
+    "level": "demo",
+    "score": 0.88,
+    "warnings": [
+      "Demo analysis values are placeholders for API integration and presentation wiring.",
+      "Do not interpret these values as measured research results."
+    ]
+  }
+}
