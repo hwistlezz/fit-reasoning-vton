@@ -64,6 +64,7 @@ backend/datasets/**/*.bmp
 backend/training/outputs/**
 backend/outputs/**
 backend/logs/**
+backend/demo/assets/**
 !backend/outputs/
 !backend/outputs/.gitkeep
 !backend/logs/
