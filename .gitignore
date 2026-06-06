@@ -58,6 +58,7 @@ backend/datasets/*.txt
 
 # AIHub archives / extracted large data
 *.zip
+*.zip.*
 *.7z
 *.7z.*
 *.tar
@@ -103,9 +104,10 @@ backend/datasets/**/*.bmp
 !backend/datasets/contact_sheets/.gitkeep
 
 # Backend generated outputs / logs
+backend/training/outputs/**
 backend/outputs/**
 backend/logs/**
-
+backend/demo/assets/**
 !backend/outputs/
 !backend/outputs/.gitkeep
 

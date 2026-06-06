@@ -1,0 +1,11 @@
+[
+  {
+    "pair_id": "EP00000000",
+    "category": "upper-body",
+    "pose_type": "standing_frontal",
+    "difficulty": "medium",
+    "gt_fit_label": "regular",
+    "input_confidence": 0.92,
+    "split": "demo"
+  }
+]
