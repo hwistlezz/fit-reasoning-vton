@@ -342,9 +342,6 @@ Completed:
 - LoRA adapter save/load 1-step smoke
 - Demo compare backend API skeleton
 - Next.js demo compare page structure
-
-Not completed yet:
-
 - 9995-step adapter save result
 - Saved 10k adapter based inference
 - Baseline StableVITON vs LoRA generated image comparison
@@ -486,15 +483,15 @@ Only source code, schemas, scripts, docs, and small example JSON files are inten
 ## ⚠️ Limitations
 
 - PR #107 verified a 9995-step training loop, but it did not save checkpoint/sample outputs.
-- PR #110 verified LoRA adapter save/load with 1-step smoke, but the 9995-step adapter save result is still a follow-up run.
-- The README does not include actual baseline vs LoRA inference images yet.
-- The current LoRA experiment does not prove visual quality improvement.
+- PR #110 verified LoRA adapter save/load with 1-step smoke, and the follow-up 9995-step adapter save run was completed locally.
+- The saved adapter file is excluded from Git due to file size and artifact policy.
 - Fit confidence, fit explanation, and hotspot annotation are system goals and UI/API directions, but final model-linked reasoning output still requires integration.
 - Dataset and output artifacts are excluded from Git due to size and license constraints.
 
 ## 🛣️ Roadmap
 
-- Complete 9995-step adapter save run.
+- Run saved-adapter inference smoke.
+- Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
 - Run saved-adapter inference smoke.
 - Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
 - Compare StableVITON, IDM-VTON, and CATVITON/CATVTON on the same person-cloth pairs.
