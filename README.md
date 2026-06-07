@@ -6,7 +6,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 ## 🎬 Demo
 
-현재 Git에는 실제 데모 영상, 결과 이미지, checkpoint, dataset을 포함하지 않습니다.
+현재 Git에는 실제 데모 영상, 결과 이미지, dataset을 포함하지 않습니다.
 
 데모 영상 링크: https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
 
@@ -23,9 +23,145 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
   
 상단의 `StableVITON`, `IDM VTON`, `CAT VITON` 탭은 StableVITON 중심 실험 결과를 확장하여 후속 baseline comparison을 진행하기 위한 비교 모델 후보를 나타냅니다.
 
-### 📊 Quantitative Fit Comparison Flow
+### 🧥🆚👕 Demo Flow: Model Comparison and Fit Reasoning
+
+아래 화면들은 동일한 person image(사람 이미지), cloth image(의류 이미지), target worn image(정답 착용 이미지)를 기준으로 StableVITON baseline과 StableVITON + LoRA 결과를 비교하는 데모 흐름입니다.
+
+이 데모는 단순히 결과 이미지만 보여주는 것이 아니라, 다음 정보를 함께 확인할 수 있도록 구성했습니다.
+
+- 입력 이미지와 정답 착용 이미지
+- StableVITON baseline 결과
+- StableVITON + LoRA 결과
+- confidence score(신뢰도 점수)
+- fit score details(핏 세부 점수)
+- hotspot annotation(위험 부위 표시)
+- skeleton(포즈 정렬)
+- DensePose(신체 표면 구조)
+- agnostic mask / parsing / cloth mask(조건부 artifact)
+- reliability analysis(결과 신뢰도 분석)
+
+> 현재 화면의 정량 점수는 demo pair 기준의 UI-level comparison score입니다.  
+> 전체 test set에 대한 정량 benchmark가 아니라, 데모 입력 쌍에서 StableVITON baseline과 LoRA-enhanced 결과의 차이를 설명하기 위한 비교 지표입니다.
+
+#### 1. Input / Target / Baseline / LoRA Result Comparison
+
+<img width="904" height="604" alt="스크린샷 2026-06-07 021925" src="https://github.com/user-attachments/assets/e953ca6f-0d9d-4fe3-adf1-43d269aabc4a" />
 
 
+첫 번째 화면은 전체 비교 화면입니다.  
+좌측에는 입력으로 사용한 person image, cloth image, target worn image가 표시되고, 중앙과 우측에는 각각 StableVITON baseline과 StableVITON + LoRA 결과가 표시됩니다.
+
+이 예시에서 baseline 결과는 `confidence=72`, `level=Medium`으로 평가되었고, LoRA-enhanced 결과는 `confidence=86`, `level=High`로 평가되었습니다.  
+즉, 동일 입력 조건에서 LoRA 결과가 더 안정적인 착장 경계와 그래픽 보존을 보인다는 흐름을 보여줍니다.
+
+#### 2. Hotspot-based Fit and Quality Analysis
+
+<img width="904" height="604" alt="스크린샷 2026-06-07 021925" src="https://github.com/user-attachments/assets/b872d800-0564-4255-86f4-2dbdb99d7740" />
+
+
+두 번째 화면은 hotspot 기반 상세 분석 화면입니다.  
+결과 이미지 위에 어깨, 그래픽 중심, 소매, 밑단 등 주요 위치를 시각적으로 표시하고, 각 부위별 안정성 점수를 함께 보여줍니다.
+
+상단 카드에서는 다음 항목을 baseline과 LoRA로 비교합니다.
+
+| Metric | StableVITON | StableVITON + LoRA | Diff |
+| --- | ---: | ---: | ---: |
+| Shoulder Alignment | 74 | 88 | +14 |
+| Graphic Preservation | 69 | 87 | +18 |
+| Sleeve Boundary | 68 | 84 | +16 |
+| Hem Stability | 71 | 85 | +14 |
+| Color Consistency | 76 | 88 | +12 |
+| Pose Robustness | 70 | 84 | +14 |
+
+이 화면은 LoRA 적용 후 어떤 부위의 품질이 개선되었는지 사용자가 직관적으로 확인할 수 있게 합니다.
+
+#### 3. Skeleton-based Pose Alignment
+
+<img width="887" height="585" alt="스크린샷 2026-06-07 021953" src="https://github.com/user-attachments/assets/44db8d7a-0e23-459a-bfc7-172384304cbd" />
+
+
+세 번째 화면은 skeleton 기반 포즈 정렬 분석입니다.  
+OpenPose-style keypoint를 이용해 어깨, 팔꿈치, 손목, 골반 위치가 결과 이미지에서 얼마나 안정적으로 유지되는지 확인합니다.
+
+특히 VTON 결과에서 중요한 부분은 다음입니다.
+
+- 어깨선과 의류 어깨선의 정렬
+- 팔 위치와 소매 경계의 일관성
+- 골반/몸통 중심선과 의류 중심의 정렬
+- 비정면 자세에서 포즈 artifact가 결과 안정성에 주는 영향
+
+이 화면은 단순 이미지 품질이 아니라, 신체 구조 기반으로 결과를 분석한다는 점을 보여줍니다.
+
+#### 4. DensePose-based Conditioning Analysis
+
+<img width="900" height="592" alt="스크린샷 2026-06-07 022007" src="https://github.com/user-attachments/assets/a6667870-d2fa-462e-91bb-8b0a0a4172e9" />
+
+
+네 번째 화면은 DensePose 기반 conditioning 분석입니다.  
+비정면 자세나 손에 든 물체처럼 occlusion(가림)이 있는 입력에서도 신체 표면 구조와 의류 위치가 얼마나 안정적으로 정렬되는지 확인합니다.
+
+이 프로젝트에서는 DensePose, skeleton, enhanced result를 함께 보여주어 다음 질문에 답할 수 있도록 했습니다.
+
+- 비정면 자세에서도 상체 영역이 안정적으로 유지되는가?
+- 팔이나 물체가 의류 영역을 가리는 경우에도 결과가 무너지지 않는가?
+- LoRA 적용 결과가 baseline보다 의류 위치와 그래픽 중심을 더 잘 유지하는가?
+
+#### 5. Agnostic Mask / Parsing / Cloth Mask Analysis
+
+<img width="897" height="607" alt="스크린샷 2026-06-07 022021" src="https://github.com/user-attachments/assets/fd5760fe-8301-4009-a276-23716f68f2cb" />
+
+
+다섯 번째 화면은 StableVITON 학습과 inference에 필요한 artifact를 시각적으로 보여줍니다.
+
+화면에는 다음 artifact가 포함됩니다.
+
+| Artifact | Description |
+| --- | --- |
+| Agnostic Person | 기존 의류 영역을 제거한 사람 이미지 |
+| Upper-body Mask | 상체 의류 영역을 나타내는 mask |
+| Human Parsing Map | 사람 신체 부위별 parsing 결과 |
+| Cloth Mask | 입력 의류의 영역 mask |
+
+이 화면은 StableVITON 계열 VTON이 단순히 `person image + cloth image`만 사용하는 것이 아니라, pose, parsing, mask, DensePose 같은 조건부 artifact 정합성이 중요하다는 점을 보여줍니다.
+
+#### 6. Reliability and Confidence Analysis
+
+<img width="904" height="601" alt="스크린샷 2026-06-07 022033" src="https://github.com/user-attachments/assets/8e81236c-9858-4e51-8fbf-5df7d4cdb365" />
+
+
+여섯 번째 화면은 결과 신뢰도 분석 화면입니다.  
+최종 result reliability score는 `86`으로 표시되며, 입력 품질, pose confidence, garment alignment, boundary stability를 함께 평가합니다.
+
+| Reliability Item | Score |
+| --- | ---: |
+| Result Reliability | 86 |
+| Input Quality | 82 |
+| Pose Confidence | 78 |
+| Garment Alignment | 86 |
+| Boundary Stability | 84 |
+
+이 화면은 결과가 그럴듯하게 보이는지뿐 아니라, 입력 조건과 artifact 안정성을 기준으로 사용자가 결과를 얼마나 신뢰할 수 있는지 설명하기 위한 UI입니다.
+
+#### 7. Fit Details and Metric Comparison
+
+<img width="916" height="587" alt="스크린샷 2026-06-07 022137" src="https://github.com/user-attachments/assets/75892b19-72eb-4a1e-8334-e77b64d0b2f8" />
+
+
+마지막 화면은 fit details 분석입니다.  
+StableVITON baseline은 `slightly unstable oversized fit`으로, StableVITON + LoRA는 `stable oversized fit`으로 표시됩니다.
+
+또한 앞에서 보여준 6개 세부 지표를 표 형태로 다시 정리하여, LoRA 적용 전후의 차이를 명확히 보여줍니다.
+
+| Metric | Baseline | LoRA | Diff |
+| --- | ---: | ---: | ---: |
+| Shoulder Alignment | 74 | 88 | +14 |
+| Graphic Preservation | 69 | 87 | +18 |
+| Sleeve Boundary | 68 | 84 | +16 |
+| Hem Stability | 71 | 85 | +14 |
+| Color Consistency | 76 | 88 | +12 |
+| Pose Robustness | 70 | 84 | +14 |
+
+이 흐름을 통해 사용자는 단순히 “결과 이미지가 좋아 보인다”가 아니라, 어느 부위에서 어떤 점수가 개선되었는지 확인할 수 있습니다.
 
 
 
@@ -378,6 +514,31 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 | sample_created | false |
 | Git included | false |
 
+### Experiment 6. Demo Pair Quality Score Comparison
+
+이 실험은 동일한 demo pair에 대해 StableVITON baseline과 StableVITON + LoRA 결과를 비교한 UI-level quality score입니다.
+
+> 이 점수는 전체 test set benchmark가 아니라, 데모 화면에서 사용한 특정 입력 쌍에 대한 비교 지표입니다.  
+> LoRA가 일반적으로 모든 입력에서 성능을 개선한다고 결론 내리기 위해서는 추가적인 test set 기반 정량 평가가 필요합니다.
+
+| Metric | StableVITON | StableVITON + LoRA | Diff |
+| --- | ---: | ---: | ---: |
+| Overall Confidence | 72 | 86 | +14 |
+| Shoulder Alignment | 74 | 88 | +14 |
+| Graphic Preservation | 69 | 87 | +18 |
+| Sleeve Boundary | 68 | 84 | +16 |
+| Hem Stability | 71 | 85 | +14 |
+| Color Consistency | 76 | 88 | +12 |
+| Pose Robustness | 70 | 84 | +14 |
+
+#### Interpretation
+
+StableVITON + LoRA 결과는 demo pair 기준으로 모든 세부 항목에서 baseline보다 높은 점수를 보였습니다.
+
+가장 큰 차이는 `Graphic Preservation(+18)`과 `Sleeve Boundary(+16)`에서 나타났습니다.  
+이는 LoRA 결과가 전면 그래픽의 중심 위치와 선명도, 소매 경계 분리에서 더 안정적인 결과를 보였다는 것을 의미합니다.
+
+다만 이 결과는 하나의 demo pair 기준 비교이므로, 모델의 일반적인 성능 향상을 주장하기보다는 “artifact-aware LoRA 결과를 설명 가능한 UI로 비교할 수 있다”는 점을 보여주는 근거로 사용합니다.
 
 
 ## 🛠️ Troubleshooting / Lessons Learned
@@ -647,6 +808,8 @@ Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하�
 - 현재 LoRA 실험만으로 실제 착장 품질이 개선됐다고 결론 내릴 수는 없습니다.
 - Fit confidence, fit explanation, hotspot annotation은 시스템 목표와 UI/API 방향으로 준비되어 있지만, 최종 모델 기반 reasoning output과의 통합은 추가 작업이 필요합니다.
 - Dataset과 output artifact는 용량 및 라이선스 문제로 Git에 포함하지 않습니다.
+- Demo pair quality score는 특정 입력 쌍에 대한 UI-level 비교 결과이며, 전체 test set에 대한 정량 benchmark는 아직 수행하지 않았습니다.
+- 현재 화면의 fit/reliability score는 demo comparison을 설명하기 위한 지표이므로, 모델의 일반적인 성능 개선을 주장하려면 더 많은 pair에 대한 반복 평가가 필요합니다.
 
 ## 🛣️ 향후 작업
 
