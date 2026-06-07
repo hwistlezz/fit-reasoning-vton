@@ -3,47 +3,58 @@
 import CaseInputPanel from "./CaseInputPanel";
 import DetailedAnalysisTabs from "./DetailedAnalysisTabs";
 import MetricCard from "./MetricCard";
-import PairSelector from "./PairSelector";
 import ResultCard from "./ResultCard";
 import RiskGaugeCard from "./RiskGaugeCard";
 import PageShell from "@/components/layout/PageShell";
-import type { DemoCompareResponse, DemoMetric, DemoSample } from "@/lib/types";
+import type { UploadInputs } from "./ComparePageClient";
+import type {
+  DemoCompareResponse,
+  DemoMetric,
+  UploadSlotKey,
+} from "@/lib/types";
 
 type ComparePageTemplateProps = {
+  canRunComparison: boolean;
   data: DemoCompareResponse;
-  samples: DemoSample[];
+  isRunning: boolean;
+  onFileChange: (slot: UploadSlotKey, file?: File) => void;
+  onRunComparison: () => void;
+  uploadError?: string;
+  uploadJobId?: string;
+  uploads: UploadInputs;
+  uploadStatus: string;
 };
 
 const pageConfig = {
-  eyebrow: "Model Compare",
-  title: "StableVITON Result Comparison",
+  eyebrow: "Live Try-On",
+  title: "StableVITON Comparison Results",
   subtitle:
-    "동일한 입력에서 실제 착용 이미지, 기본 StableVITON 결과, 10k Agnostic + DensePose 개선 결과를 비교합니다.",
+    "입력 이미지를 업로드하면 기본 StableVITON 결과와 StableVITON Lora 결과를 비교합니다.",
   defaultTab: "densepose" as const,
   results: [
     {
       title: "Target Worn",
-      helper: "실제 착용 참고 이미지",
-      caption: "실제 사람이 해당 의류를 착용한 기준 이미지입니다.",
+      helper: "Ground Truth",
+      caption: "실제 착용 이미지를 기준으로 결과를 비교합니다.",
       imageKey: "target_worn" as const,
       variant: "blue" as const,
       badgeLabel: "Reference",
     },
     {
       title: "StableVITON",
-      helper: "기본 모델 결과",
+      helper: "Base Model",
       caption: "기본 StableVITON 추론 결과입니다.",
       imageKey: "stableviton" as const,
       variant: "orange" as const,
       badgeLabel: "Base",
     },
     {
-      title: "Enhanced Result",
-      helper: "Agnostic + DensePose",
-      caption: "Agnostic mask와 DensePose 조건을 활용한 개선 결과입니다.",
+      title: "StableVITON LoRA",
+      helper: "Enhanced Model",
+      caption: "StableVITON LoRA 모델을 사용한 개선 결과입니다.",
       imageKey: "enhanced_result" as const,
       variant: "green" as const,
-      badgeLabel: "Enhanced",
+      badgeLabel: "LoRA",
     },
   ],
 };
@@ -54,12 +65,19 @@ function isRiskMetric(metric: DemoMetric) {
 }
 
 export default function ComparePageTemplate({
+  canRunComparison,
   data,
-  samples,
+  isRunning,
+  onFileChange,
+  onRunComparison,
+  uploadError,
+  uploadJobId,
+  uploads,
+  uploadStatus,
 }: ComparePageTemplateProps) {
   return (
     <PageShell>
-      <section className="grid gap-5 rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/70 p-5 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur lg:grid-cols-[1fr_340px] lg:items-end">
+      <section className="grid gap-5 rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/70 p-5 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur lg:grid-cols-[1fr_320px] lg:items-end">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-[#38BDF8]">
             {pageConfig.eyebrow}
@@ -71,20 +89,30 @@ export default function ComparePageTemplate({
             {pageConfig.subtitle}
           </p>
         </div>
-        <PairSelector samples={samples} selectedPairId={data.pair_id} />
+        <div className="rounded-xl border border-[#6EA5FF]/18 bg-[#061426]/70 px-4 py-3 text-sm leading-6 text-[#9AA8BA]">
+          <span className="font-semibold text-[#E5EDF8]">Upload Input</span>
+          <br />
+          Person / Cloth / Worn images
+        </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <section className="grid items-start gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
         <CaseInputPanel
-          demoCase={data.case}
-          images={data.images}
+          canRunComparison={canRunComparison}
+          isRunning={isRunning}
+          onFileChange={onFileChange}
+          onRunComparison={onRunComparison}
+          uploadError={uploadError}
+          uploadJobId={uploadJobId}
+          uploads={uploads}
+          uploadStatus={uploadStatus}
         />
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-4 lg:grid-cols-3">
           {pageConfig.results.map((result) => (
             <ResultCard
+              badgeLabel={result.badgeLabel}
               caption={result.caption}
               helper={result.helper}
-              badgeLabel={result.badgeLabel}
               imageSrc={data.images[result.imageKey]}
               key={result.title}
               title={result.title}
@@ -109,14 +137,6 @@ export default function ComparePageTemplate({
         defaultTab={pageConfig.defaultTab}
         images={data.images}
       />
-
-      <footer className="rounded-2xl border border-[#6EA5FF]/16 bg-[#081426]/60 px-5 py-4 text-sm leading-6 text-[#9AA8BA]">
-        Metrics are computed on curated demo samples. Confidence is an
-        analytical estimate, not a guarantee.
-        <br />
-        Metrics are computed on curated demo samples and used for qualitative
-        presentation.
-      </footer>
     </PageShell>
   );
 }

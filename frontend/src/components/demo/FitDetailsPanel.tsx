@@ -39,8 +39,8 @@ export default function FitDetailsPanel({ fit }: FitDetailsPanelProps) {
           Confidence {percent(fit.confidence)}
         </p>
         <p className="mt-4 text-sm leading-6 text-[#9AA8BA]">
-          어깨, 몸통, 소매, 기장 비율을 기반으로 생성 결과의 핏을
-          해석합니다.
+          어깨, 몸통, 소매, 의류 길이 비율을 기준으로 생성 결과의 착용
+          일관성을 분석합니다.
         </p>
       </div>
       <div className="grid gap-4 xl:grid-cols-2">

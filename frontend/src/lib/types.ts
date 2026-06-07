@@ -1,6 +1,16 @@
 export type ComparePageType = "model";
 
 export type MetricDirection = "higher_is_better" | "lower_is_better";
+export type UploadSlotKey = "person" | "cloth" | "worn";
+export type TryOnJobStatus =
+  | "pending"
+  | "running"
+  | "uploading"
+  | "preprocessing"
+  | "stableviton"
+  | "enhanced"
+  | "done"
+  | "failed";
 
 export type DemoCase = {
   pair_id: string;
@@ -17,7 +27,7 @@ export type DemoImageSet = {
   person: string;
   cloth: string;
   target_worn: string;
-  stableviton?: string;
+  stableviton: string;
   enhanced_result: string;
   agnostic?: string;
   agnostic_mask?: string;
@@ -94,4 +104,17 @@ export type DemoCompareResponse = {
   images: DemoImageSet;
   metrics: DemoMetric[];
   analysis: DemoAnalysis;
+};
+
+export type TryOnUploadFiles = {
+  person_image: File;
+  cloth_image: File;
+  worn_image: File;
+};
+
+export type TryOnJobResponse = {
+  job_id?: string;
+  status: TryOnJobStatus;
+  result?: DemoCompareResponse;
+  error?: string;
 };

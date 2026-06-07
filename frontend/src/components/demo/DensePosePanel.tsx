@@ -26,21 +26,26 @@ export default function DensePosePanel({ images, analysis }: DensePosePanelProps
   ];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map((card) => (
           <div
             className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-3"
             key={card.label}
           >
-            <ImageWithFallback alt={card.alt} label={card.label} src={card.src} />
+            <ImageWithFallback
+              alt={card.alt}
+              aspectClass="h-[220px]"
+              label={card.label}
+              src={card.src}
+            />
             <p className="mt-3 text-sm font-semibold text-[#E5EDF8]">
               {card.label}
             </p>
           </div>
         ))}
       </div>
-      <div className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-5">
+      <div className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-4">
         <p className="text-xs uppercase tracking-[0.2em] text-[#38BDF8]">
           DensePose
         </p>
