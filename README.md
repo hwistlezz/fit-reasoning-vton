@@ -91,6 +91,124 @@ flowchart LR
   H --> I[Fit Reasoning UI]
 ```
 
+## 👥 팀 역할 및 협업 방식
+
+이 프로젝트는 백엔드/API, 프론트엔드 UI, 데이터 전처리, StableVITON/LoRA 학습 실험을 PC별로 나누어 진행했습니다.  
+대용량 dataset, checkpoint, generated output은 Git에 포함하지 않고, 각 PC의 local workspace에서 처리한 뒤 코드와 실험 문서만 repository에 기록했습니다.
+
+| 팀원 | 담당 영역 | 담당 PC / 환경 | 주요 작업 |
+| --- | --- | --- | --- |
+| 김성휘 | Backend, PC1, PC3, LoRA training | PC1, PC3 | FastAPI backend 구조 설계, Try-On job API, StableVITON wrapper, PC3 dataset 검증, StableVITON-compatible layout 구성, LoRA runner 구현, 10k 9995-step training, LoRA adapter save/load 검증, 실험 문서화 |
+| 정경재 | Frontend, PC2, Data preprocessing | Frontend local dev, PC2 preprocessing environment | Next.js demo UI, model/artifact comparison page, 업로드/결과 비교 화면 구성, AIHub 기반 preprocessing artifact 생성, PC2 dataset 정리, PC3 전달용 dataset archive 준비 |
+
+### PC별 작업 흐름
+
+```mermaid
+flowchart LR
+  A[PC2: AIHub data preprocessing] --> B[Dataset archive / split files]
+  B --> C[HTTP transfer to PC3]
+  C --> D[PC3: 압축 해제 및 dataset smoke test]
+  D --> E[StableVITON-compatible 10k layout]
+  E --> F[PC3: LoRA training / adapter save]
+  F --> G[PC1: Backend API / StableVITON service]
+  G --> H[Frontend: demo compare UI]
+```
+
+### PC1: Backend / StableVITON API Server
+
+PC1은 사용자가 업로드한 person image와 cloth image를 받아 StableVITON inference 흐름에 연결하기 위한 backend server 역할을 담당했습니다.
+
+주요 작업은 다음과 같습니다.
+
+- FastAPI backend skeleton 구성
+- `/api/health`, `/api/tryon`, `/api/job/{job_id}`, `/api/result/{job_id}` API 구조 준비
+- 외부 StableVITON repository를 직접 수정하지 않고 호출하는 wrapper 구조 설계
+- Demo compare API skeleton 구성
+- result schema, confidence, fit explanation, hotspot annotation을 연결할 수 있는 API 응답 구조 준비
+
+### PC2: Frontend / Data Preprocessing
+
+PC2는 AIHub dataset 기반 preprocessing과 frontend UI 구현을 담당했습니다.
+
+주요 작업은 다음과 같습니다.
+
+- AIHub 원본 데이터 기반 preprocessing artifact 준비
+- pose, parsing, mask, DensePose 계열 artifact 정리
+- PC3에서 사용할 수 있도록 dataset archive 구성
+- HTTP server를 통해 PC3로 dataset 전달
+- Next.js 기반 demo UI 구현
+- person image, cloth image, target worn, StableVITON, StableVITON LoRA 결과를 비교할 수 있는 model comparison page 구성
+
+### PC3: Dataset Validation / LoRA Training
+
+PC3는 PC2에서 전달받은 dataset을 이용해 StableVITON-compatible layout을 만들고, LoRA training 실험을 수행하는 역할을 담당했습니다.
+
+작업 흐름은 다음과 같습니다.
+
+1. PC2에서 전처리한 dataset archive를 HTTP로 전달받음
+2. PC3 local workspace에서 압축 해제
+3. dataset file count, manifest, required artifact 존재 여부 검증
+4. StableVITON-compatible 10k train layout 구성
+5. 1-step sanity → 100-step benchmark → 9995-step run 순서로 학습 가능성 검증
+6. StableVITON 일부 attention Linear module에 LoRA adapter 삽입
+7. 10k 9995-step 1 epoch-equivalent LoRA training 수행
+8. LoRA adapter save/load smoke 및 9995-step adapter save run 수행
+
+## 🌿 Git Flow
+
+이 프로젝트는 `dev` branch를 기준 통합 브랜치로 사용하는 Git Flow 방식으로 작업했습니다.  
+`main`에 직접 작업하지 않고, 기능/실험/문서 단위로 issue branch를 만든 뒤 PR을 통해 `dev`에 병합하는 흐름을 유지했습니다.
+
+### Branch Strategy
+
+| Branch Type | Purpose | Example |
+| --- | --- | --- |
+| `dev` | 통합 개발 브랜치 | `dev` |
+| `feat/#이슈번호/...` | 기능 구현 | `feat/#12/backend-skeleton` |
+| `experiment/#이슈번호/...` | 실험 및 학습 검증 | `experiment/#106/stableviton-lora-10k-epoch-pilot` |
+| `docs/#이슈번호/...` | 문서 작성 및 README 수정 | `docs/#111/readme-final-polish` |
+| `chore/#이슈번호/...` | 환경 설정, 정리 작업 | `chore/#3/backend-folder-setup` |
+
+### 작업 순서
+
+```text
+1. dev 최신화
+2. issue 단위 branch 생성
+3. 작업 수행
+4. 실험 결과 또는 구현 내용 문서화
+5. git diff --check 검증
+6. dataset/output/checkpoint/generated image가 Git에 포함되지 않았는지 확인
+7. commit
+8. origin에 push
+9. Pull Request 생성
+10. review 후 dev에 merge
+```
+
+### 실제 작업 예시
+
+```powershell
+git switch dev
+git pull origin dev
+git switch -c "experiment/#106/stableviton-lora-10k-epoch-pilot"
+```
+
+작업 완료 후에는 다음과 같은 형식으로 commit message를 작성했습니다.
+
+```text
+feat(#106/stableviton): LoRA 10k epoch pilot 실행 기록
+docs(#111): README 고도화
+```
+
+### 협업 원칙
+
+- 모든 작업은 issue 단위로 분리했습니다.
+- 실험성 작업은 `experiment/#이슈번호/...` branch에서 진행했습니다.
+- 문서 작업은 `docs/#이슈번호/...` branch에서 진행했습니다.
+- `dev` branch를 기준으로 최신 상태를 맞춘 뒤 새 branch를 생성했습니다.
+- dataset, checkpoint, generated image, `.pt` adapter file은 Git에 포함하지 않았습니다.
+- 실험 결과는 `docs/experiments/`에 기록하고, README에는 핵심 결과만 요약했습니다.
+- 팀원별 작업 내역이 Git log와 PR 기록에 남도록 기능/문서/실험 단위로 commit과 PR을 나누어 진행했습니다.
+
 ## 📦 Dataset and Artifacts
 
 사용 dataset은 AIHub 쉐이프리스 의류 및 포즈 데이터 기반으로 PC2/PC3 작업 흐름에서 구성한 10k artifact dataset입니다.
