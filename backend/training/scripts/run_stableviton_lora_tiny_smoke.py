@@ -102,6 +102,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-prepare-smoke-data", dest="prepare_smoke_data", action="store_false")
     parser.add_argument("--enable-input-grad-for-checkpoint", action="store_true", default=True)
     parser.add_argument("--disable-gradient-checkpointing", action="store_true", default=True)
+    parser.add_argument("--save-lora-path", default=None)
+    parser.add_argument("--load-lora-path", default=None)
     return parser.parse_args()
 
 
@@ -209,11 +211,59 @@ def insert_lora_modules(
     return selected
 
 
+def collect_lora_state_dict(model: nn.Module) -> dict[str, torch.Tensor]:
+    return {
+        name: param.detach().cpu()
+        for name, param in model.named_parameters()
+        if ".lora_down." in name or ".lora_up." in name
+    }
+
+
+def load_lora_adapter(
+    model: nn.Module,
+    adapter_path: Path,
+) -> tuple[bool, int, list[str], list[str], list[str]]:
+    payload = torch.load(adapter_path, map_location="cpu")
+    raw_state_dict = payload.get("state_dict", payload) if isinstance(payload, dict) else payload
+    if not isinstance(raw_state_dict, dict):
+        raise TypeError(f"LoRA adapter state_dict must be a dict: {adapter_path}")
+
+    lora_params = {
+        name: param
+        for name, param in model.named_parameters()
+        if ".lora_down." in name or ".lora_up." in name
+    }
+    expected_keys = set(lora_params)
+    loaded_keys = set(raw_state_dict)
+    missing_keys = sorted(expected_keys - loaded_keys)
+    unexpected_keys = sorted(loaded_keys - expected_keys)
+    shape_mismatch_keys: list[str] = []
+    loaded_count = 0
+
+    with torch.no_grad():
+        for key in sorted(expected_keys & loaded_keys):
+            value = raw_state_dict[key]
+            if not torch.is_tensor(value):
+                unexpected_keys.append(key)
+                continue
+            target = lora_params[key]
+            if tuple(target.shape) != tuple(value.shape):
+                shape_mismatch_keys.append(key)
+                continue
+            target.copy_(value.to(device=target.device, dtype=target.dtype))
+            loaded_count += 1
+
+    load_success = not missing_keys and not unexpected_keys and not shape_mismatch_keys
+    return load_success, loaded_count, missing_keys, sorted(set(unexpected_keys)), shape_mismatch_keys
+
+
 def main() -> int:
     args = parse_args()
     stableviton_root = Path(args.stableviton_root)
     data_root = Path(args.data_root)
     output_root = Path(args.output_root)
+    save_lora_path = Path(args.save_lora_path) if args.save_lora_path else None
+    load_lora_path = Path(args.load_lora_path) if args.load_lora_path else None
     logs_root = output_root / "logs"
     output_root.mkdir(parents=True, exist_ok=True)
     logs_root.mkdir(parents=True, exist_ok=True)
@@ -232,6 +282,15 @@ def main() -> int:
         "prepare_smoke_data": args.prepare_smoke_data,
         "enable_input_grad_for_checkpoint": args.enable_input_grad_for_checkpoint,
         "disable_gradient_checkpointing": args.disable_gradient_checkpointing,
+        "save_lora_path": str(save_lora_path) if save_lora_path else None,
+        "load_lora_path": str(load_lora_path) if load_lora_path else None,
+        "lora_adapter_saved": False,
+        "lora_adapter_loaded": False,
+        "lora_state_dict_key_count": 0,
+        "lora_adapter_file_size_mb": None,
+        "load_missing_keys": [],
+        "load_unexpected_keys": [],
+        "load_shape_mismatch_keys": [],
     }
     summary_path = output_root / "lora_tiny_smoke_summary.json"
 
@@ -311,7 +370,26 @@ def main() -> int:
             dropout=args.dropout,
             max_modules=args.max_lora_modules,
         )
+        lora_state_dict = collect_lora_state_dict(model)
         trainable_after_lora = count_params(model, trainable_only=True)
+
+        if load_lora_path is not None:
+            if not load_lora_path.exists():
+                raise FileNotFoundError(f"LoRA adapter not found: {load_lora_path}")
+            load_success, loaded_count, missing_keys, unexpected_keys, shape_mismatch_keys = load_lora_adapter(
+                model,
+                load_lora_path,
+            )
+            summary.update(
+                {
+                    "lora_adapter_loaded": load_success,
+                    "lora_adapter_loaded_key_count": loaded_count,
+                    "lora_adapter_file_size_mb": round(load_lora_path.stat().st_size / 1024**2, 4),
+                    "load_missing_keys": missing_keys,
+                    "load_unexpected_keys": unexpected_keys,
+                    "load_shape_mismatch_keys": shape_mismatch_keys,
+                }
+            )
 
         trainable_param_names = [
             name
@@ -328,6 +406,7 @@ def main() -> int:
                 "trainable_ratio": trainable_after_lora / total_params if total_params else 0,
                 "inserted_lora_module_count": len(inserted_names),
                 "inserted_lora_module_names": inserted_names,
+                "lora_state_dict_key_count": len(lora_state_dict),
                 "trainable_param_name_sample": trainable_param_names[:32],
             }
         )
@@ -400,6 +479,27 @@ def main() -> int:
         first_loss = metrics.losses[0] if metrics.losses else None
         final_loss = metrics.losses[-1] if metrics.losses else None
         loss_nan = any(value != value for value in metrics.losses)
+        if save_lora_path is not None:
+            save_lora_path.parent.mkdir(parents=True, exist_ok=True)
+            lora_state_dict = collect_lora_state_dict(model)
+            torch.save(
+                {
+                    "rank": args.rank,
+                    "alpha": args.alpha,
+                    "dropout": args.dropout,
+                    "max_lora_modules": args.max_lora_modules,
+                    "inserted_lora_module_names": inserted_names,
+                    "state_dict": lora_state_dict,
+                },
+                save_lora_path,
+            )
+            summary.update(
+                {
+                    "lora_adapter_saved": True,
+                    "lora_state_dict_key_count": len(lora_state_dict),
+                    "lora_adapter_file_size_mb": round(save_lora_path.stat().st_size / 1024**2, 4),
+                }
+            )
         summary.update(
             {
                 "status": "success",
