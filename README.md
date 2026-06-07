@@ -1,4 +1,4 @@
-# Fit-Reasoning VTON
+# 🧥 Fit-Reasoning VTON
 
 StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결합하기 위한 프로젝트입니다.
 
@@ -6,7 +6,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 > 현재 README는 제출용 정리 문서입니다. 실제 완료한 실험 결과와 아직 후속 작업으로 남은 항목을 명확히 구분합니다.
 
-## Demo
+## 🎬 Demo
 
 Demo video will be added / submitted separately.
 
@@ -16,7 +16,7 @@ Demo video will be added / submitted separately.
 <!-- Suggested placeholder path: assets/readme/demo_flow.png -->
 <!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
 
-## Motivation
+## 💡 Motivation
 
 일반적인 Virtual Try-On(VTON)은 “옷이 입혀진 이미지”를 보여주는 데 집중합니다. 하지만 실제 사용자는 다음 질문을 함께 알고 싶어 합니다.
 
@@ -27,7 +27,7 @@ Demo video will be added / submitted separately.
 
 Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, adapter save/load smoke까지 검증했습니다.
 
-## Problem Definition
+## 🎯 Problem Definition
 
 ### Input
 
@@ -62,7 +62,7 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 - LoRA가 착장 품질을 개선했다는 정량/정성 결론
 - 최종 demo video 업로드
 
-## Key Contributions
+## ✨ Key Contributions
 
 1. AIHub 10k full artifact dataset readiness를 검증했습니다.
 2. StableVITON 학습 포맷에 맞는 9995개 train-only layout을 구성했습니다.
@@ -72,7 +72,7 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 6. LoRA parameter만 저장/로드하는 adapter save/load smoke를 검증했습니다.
 7. Dataset, output, checkpoint, generated image를 Git에 포함하지 않는 실험 문서화 체계를 유지했습니다.
 
-## System Overview
+## 🧩 System Overview
 
 ```mermaid
 flowchart LR
@@ -86,7 +86,7 @@ flowchart LR
   H --> I[Fit Reasoning UI]
 ```
 
-## Dataset and Artifacts
+## 📦 Dataset and Artifacts
 
 사용 dataset은 AIHub 쉐이프리스 의류 및 포즈 데이터 기반으로 PC2/PC3 작업 흐름에서 구성한 10k artifact dataset입니다.
 
@@ -128,7 +128,7 @@ StableVITON-compatible layout에서 검증한 artifact는 다음과 같습니다
 | artifact_errors | 0 |
 | backend_loader_errors | 0 |
 
-## Model and Training
+## 🧠 Model and Training
 
 ### Base Model
 
@@ -157,7 +157,19 @@ Example target pattern:
 model.diffusion_model.input_blocks.*.transformer_blocks.0.attn*.to_q
 ```
 
-## Experiments / Results
+## 🧪 Compared / Referenced VTON Models
+
+이번 프로젝트는 StableVITON을 중심으로 학습 pipeline을 구축했지만, VTON 모델 후보를 검토하는 과정에서 IDM-VTON과 CATVITON/CATVTON 계열도 비교 대상으로 참고했습니다.
+
+| Model | Role in This Project | Status |
+| --- | --- | --- |
+| StableVITON | Main training backbone | 10k layout, LoRA training, save/load smoke 검증 |
+| IDM-VTON | Reference / baseline candidate | 구조 및 결과 비교 후보로 검토 |
+| CATVITON / CATVTON | Reference / baseline candidate | artifact-aware VTON 비교 후보로 검토 |
+
+현재 README 기준으로 실제 10k LoRA 학습과 실험 로그가 정리된 모델은 StableVITON입니다. IDM-VTON과 CATVITON/CATVTON은 후속 baseline comparison 대상으로 남겨둡니다.
+
+## 📊 Experiments / Results
 
 모든 결과는 training/smoke 관측값입니다. 아직 try-on image quality benchmark나 baseline vs LoRA inference comparison 결과가 아닙니다.
 
@@ -215,7 +227,7 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 | shape_mismatch_keys | - | `[]` |
 | peak_vram_mb | 8887.85 | 8887.85 |
 
-## Results Status
+## ✅ Results Status
 
 Completed:
 
@@ -235,7 +247,7 @@ Not completed yet:
 - Baseline StableVITON vs LoRA generated image comparison
 - Final demo video in README
 
-## Usage
+## 🚀 Usage
 
 The commands below assume:
 
@@ -303,7 +315,7 @@ Current frontend direction:
 - Confidence badge, fit explanation, detailed analysis tabs, hotspot overlay planned/structured
 - Real generated comparison images are not yet committed
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```text
 fit-reasoning-vton/
@@ -343,7 +355,7 @@ fit-reasoning-vton/
   scripts/
 ```
 
-## Documentation Links
+## 📚 Documentation Links
 
 - [StableVITON LoRA 10k epoch pilot](docs/experiments/pc3_stableviton_lora_10k_epoch_pilot.md)
 - [LoRA save/load smoke and inference comparison prep](docs/experiments/pc3_stableviton_lora_save_load_inference_comparison.md)
@@ -352,7 +364,7 @@ fit-reasoning-vton/
 - [Demo backend API contract](docs/experiments/demo_backend_api_contract.md)
 - [Demo asset package contract](docs/experiments/demo_asset_package_contract.md)
 
-## Git and Data Policy
+## 🔒 Git and Data Policy
 
 The repository intentionally excludes:
 
@@ -368,7 +380,7 @@ The repository intentionally excludes:
 
 Only source code, schemas, scripts, docs, and small example JSON files are intended to be committed.
 
-## Limitations
+## ⚠️ Limitations
 
 - PR #107 verified a 9995-step training loop, but it did not save checkpoint/sample outputs.
 - PR #110 verified LoRA adapter save/load with 1-step smoke, but the 9995-step adapter save result is still a follow-up run.
@@ -377,22 +389,27 @@ Only source code, schemas, scripts, docs, and small example JSON files are inten
 - Fit confidence, fit explanation, and hotspot annotation are system goals and UI/API directions, but final model-linked reasoning output still requires integration.
 - Dataset and output artifacts are excluded from Git due to size and license constraints.
 
-## Roadmap
+## 🛣️ Roadmap
 
 - Complete 9995-step adapter save run.
 - Run saved-adapter inference smoke.
 - Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
+- Compare StableVITON, IDM-VTON, and CATVITON/CATVTON on the same person-cloth pairs.
+- Add qualitative comparison table: StableVITON baseline vs StableVITON+LoRA vs IDM-VTON vs CATVITON/CATVTON.
+- Analyze garment boundary, pose alignment, body distortion, and failure cases.
 - Add at least 3 demo pairs to local `backend/demo/assets/**`.
 - Validate demo assets with strict validation.
 - Connect final images to the demo compare UI.
 - Add demo GIF or video link to this README.
 - Integrate fit confidence, explanation, and hotspot annotation into the final user flow.
 
-## References / Acknowledgements
+## 🙏 References / Acknowledgements
 
 This project builds on or references the following works and tools. External model code, weights, datasets, and generated assets are not redistributed in this repository.
 
 - StableVITON: Kim et al., “StableVITON: Learning Semantic Correspondence with Latent Diffusion Model for Virtual Try-On,” CVPR 2024. [GitHub](https://github.com/rlawjdghek/StableVITON), [arXiv](https://arxiv.org/abs/2312.01725)
+- IDM-VTON: Choi et al., “Improving Diffusion Models for Authentic Virtual Try-on in the Wild,” ECCV 2024. Reference VTON model considered for baseline comparison. [Project](https://idm-vton.github.io/), [GitHub](https://github.com/yisol/IDM-VTON), [arXiv](https://arxiv.org/abs/2403.05139)
+- CatVTON / CATVITON: “CatVTON: Concatenation Is All You Need for Virtual Try-On with Diffusion Models,” ICLR 2025. Reference VTON model considered for artifact-aware comparison. [GitHub](https://github.com/Zheng-Chong/CatVTON), [arXiv](https://arxiv.org/abs/2407.15886)
 - LoRA: Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models,” ICLR 2022. [arXiv](https://arxiv.org/abs/2106.09685)
 - AIHub 쉐이프리스 의류 및 포즈 데이터. [AIHub dataset page](https://www.aihub.or.kr/aihubdata/data/view.do?aihubDataSe=data&currMenu=115&dataSetSn=71535&topMenu=)
 - DensePose: Guler et al., “DensePose: Dense Human Pose Estimation In The Wild,” CVPR 2018. [Project page](https://densepose.org/), [arXiv](https://arxiv.org/abs/1802.00434)
