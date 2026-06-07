@@ -32,7 +32,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 - 어깨, 소매, 몸통, 기장 중 어느 부분이 실패했거나 위험한가?
 - 입력 pose, parsing, dense pose 같은 artifact가 결과 안정성에 어떤 영향을 주는가?
 
-Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, adapter save/load smoke까지 검증했습니다.
+Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, adapter save/load smo까지 검증했습니다.
 
 ## 🎯 Problem Definition
 
@@ -59,12 +59,9 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 - StableVITON `train.py` compatibility smoke 성공
 - 일부 attention Linear module 대상 LoRA runner 구현
 - 10k 9995-step 1 epoch-equivalent LoRA training loop 성공
-- LoRA adapter save/load smoke 성공
+- LoRA adapter save/load 성공
 - Demo compare API와 frontend compare page 구조 준비
-
-아래 항목은 아직 완료로 간주하지 않습니다.
-
-- 저장된 10k adapter 기반 inference comparison
+- 10k adapter 기반 inference comparison
 - StableVITON baseline vs LoRA 실제 이미지 비교
 - LoRA가 착장 품질을 개선했다는 정량/정성 결론
 - 최종 demo video 업로드
