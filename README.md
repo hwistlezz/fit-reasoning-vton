@@ -19,8 +19,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 위 화면은 Fit-Reasoning VTON의 데모용 비교 페이지입니다.  
 사용자는 person image(사람 이미지), cloth image(의류 이미지), worn image(정답 착용 이미지)를 업로드한 뒤, 동일한 입력에 대해 `Target Worn`, `StableVITON`, `StableVITON LoRA` 결과를 나란히 비교할 수 있습니다.
-
-현재 화면은 데모 흐름과 UI 구조를 보여주기 위한 preview이며, 실제 생성 결과 이미지와 checkpoint, dataset은 Git에 포함하지 않습니다.  
+  
 상단의 `StableVITON`, `IDM VTON`, `CAT VITON` 탭은 StableVITON 중심 실험 결과를 확장하여 후속 baseline comparison을 진행하기 위한 비교 모델 후보를 나타냅니다.
 
 ## 💡 Motivation
