@@ -12,6 +12,9 @@ Demo video will be added / submitted separately.
 
 현재 Git에는 실제 데모 영상, 결과 이미지, checkpoint, dataset을 포함하지 않습니다.
 
+데모 영상
+https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
+
 <!-- TODO: Add demo flow screenshot after final video export. -->
 <!-- Suggested placeholder path: assets/readme/demo_flow.png -->
 <!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
