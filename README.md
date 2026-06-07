@@ -98,8 +98,8 @@ flowchart LR
 
 | 팀원 | 담당 영역 | 담당 PC / 환경 | 주요 작업 |
 | --- | --- | --- | --- |
-| 김성휘 | Backend, PC1, PC3, LoRA training | PC1, PC3 | FastAPI backend 구조 설계, Try-On job API, StableVITON wrapper, PC3 dataset 검증, StableVITON-compatible layout 구성, LoRA runner 구현, 10k 9995-step training, LoRA adapter save/load 검증, 실험 문서화 |
-| 정경재 | Frontend, PC2, Data preprocessing | Frontend local dev, PC2 preprocessing environment | Next.js demo UI, model/artifact comparison page, 업로드/결과 비교 화면 구성, AIHub 기반 preprocessing artifact 생성, PC2 dataset 정리, PC3 전달용 dataset archive 준비 |
+| 김성휘 | Backend, PC 1, PC 3, LoRA training | PC 1, PC 3 | FastAPI backend 구조 설계, Try-On job API, StableVITON wrapper, PC 3 dataset 검증, StableVITON-compatible layout 구성, LoRA runner 구현, 10k 9995-step training, LoRA adapter save/load 검증, 실험 문서화 |
+| 정경재 | Frontend, PC 2, Data preprocessing | Frontend local dev, PC 2 preprocessing environment | Next.js demo UI, model/artifact comparison page, 업로드/결과 비교 화면 구성, AIHub 기반 preprocessing artifact 생성, PC 2 dataset 정리, PC 3 전달용 dataset archive 준비 |
 
 ### PC별 작업 흐름
 
@@ -114,9 +114,9 @@ flowchart LR
   G --> H[Frontend: demo compare UI]
 ```
 
-### PC1: Backend / StableVITON API Server
+### PC 1: Backend / StableVITON API Server
 
-PC1은 사용자가 업로드한 person image와 cloth image를 받아 StableVITON inference 흐름에 연결하기 위한 backend server 역할을 담당했습니다.
+PC 1은 사용자가 업로드한 person image와 cloth image를 받아 StableVITON inference 흐름에 연결하기 위한 backend server 역할을 담당했습니다.
 
 주요 작업은 다음과 같습니다.
 
@@ -126,27 +126,27 @@ PC1은 사용자가 업로드한 person image와 cloth image를 받아 StableVIT
 - Demo compare API skeleton 구성
 - result schema, confidence, fit explanation, hotspot annotation을 연결할 수 있는 API 응답 구조 준비
 
-### PC2: Frontend / Data Preprocessing
+### PC 2: Frontend / Data Preprocessing
 
-PC2는 AIHub dataset 기반 preprocessing과 frontend UI 구현을 담당했습니다.
+PC 2는 AIHub dataset 기반 preprocessing과 frontend UI 구현을 담당했습니다.
 
 주요 작업은 다음과 같습니다.
 
 - AIHub 원본 데이터 기반 preprocessing artifact 준비
 - pose, parsing, mask, DensePose 계열 artifact 정리
-- PC3에서 사용할 수 있도록 dataset archive 구성
-- HTTP server를 통해 PC3로 dataset 전달
+- PC 3에서 사용할 수 있도록 dataset archive 구성
+- HTTP server를 통해 PC 3로 dataset 전달
 - Next.js 기반 demo UI 구현
 - person image, cloth image, target worn, StableVITON, StableVITON LoRA 결과를 비교할 수 있는 model comparison page 구성
 
-### PC3: Dataset Validation / LoRA Training
+### PC 3: Dataset Validation / LoRA Training
 
-PC3는 PC2에서 전달받은 dataset을 이용해 StableVITON-compatible layout을 만들고, LoRA training 실험을 수행하는 역할을 담당했습니다.
+PC 3는 PC 2에서 전달받은 dataset을 이용해 StableVITON-compatible layout을 만들고, LoRA training 실험을 수행하는 역할을 담당했습니다.
 
 작업 흐름은 다음과 같습니다.
 
-1. PC2에서 전처리한 dataset archive를 HTTP로 전달받음
-2. PC3 local workspace에서 압축 해제
+1. PC 2에서 전처리한 dataset archive를 HTTP로 전달받음
+2. PC 3 local workspace에서 압축 해제
 3. dataset file count, manifest, required artifact 존재 여부 검증
 4. StableVITON-compatible 10k train layout 구성
 5. 1-step sanity → 100-step benchmark → 9995-step run 순서로 학습 가능성 검증
