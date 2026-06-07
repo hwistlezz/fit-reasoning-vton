@@ -517,3 +517,11 @@ This project builds on or references the following works and tools. External mod
 - DensePose: Guler et al., “DensePose: Dense Human Pose Estimation In The Wild,” CVPR 2018. [Project page](https://densepose.org/), [arXiv](https://arxiv.org/abs/1802.00434)
 - OpenPose: CMU Perceptual Computing Lab OpenPose repository and related pose estimation papers. [GitHub](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
 - PyTorch, PyTorch Lightning, FastAPI, Next.js, React, TypeScript, and related open-source tooling are used for the training/backend/frontend pipeline.
+
+## 📄 License
+
+The source code and documentation written in this repository are released under the MIT License.
+
+External model code, pretrained weights, datasets, and generated assets are not redistributed in this repository and remain subject to their original licenses or terms of use.
+
+See [LICENSE](LICENSE) for details.
