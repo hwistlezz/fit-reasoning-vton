@@ -13,7 +13,8 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 <!-- TODO: Add demo flow screenshot after final video export. -->
 <!-- Suggested placeholder path: assets/readme/demo_flow.png -->
 <!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
-### 🖥️ Demo UI Preview
+
+## 🖥️ Demo UI Preview
 
 <img width="1196" height="756" alt="image" src="https://github.com/user-attachments/assets/221bf1af-b2bc-484d-8704-6bafc3d219e1" />
 
