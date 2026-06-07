@@ -4,20 +4,18 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 이 프로젝트의 목표는 사람 이미지와 의류 이미지를 입력받아 가상 착장 결과를 만들고, 단순히 이미지만 보여주는 것이 아니라 fit label, confidence score, fit explanation, hotspot annotation까지 연결 가능한 Virtual Try-On 시스템을 만드는 것입니다.
 
-> 현재 README는 제출용 정리 문서입니다. 실제 완료한 실험 결과와 아직 후속 작업으로 남은 항목을 명확히 구분합니다.
-
 ## 🎬 Demo
 
 Demo video will be added / submitted separately.
 
 현재 Git에는 실제 데모 영상, 결과 이미지, checkpoint, dataset을 포함하지 않습니다.
 
-데모 영상
-https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
+데모 영상 링크: https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
 
 <!-- TODO: Add demo flow screenshot after final video export. -->
 <!-- Suggested placeholder path: assets/readme/demo_flow.png -->
 <!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
+<img width="1196" height="756" alt="image" src="https://github.com/user-attachments/assets/221bf1af-b2bc-484d-8704-6bafc3d219e1" />
 
 ## 💡 Motivation
 
