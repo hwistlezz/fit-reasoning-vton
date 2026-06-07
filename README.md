@@ -165,6 +165,8 @@ StableVITON baseline은 `slightly unstable oversized fit`으로, StableVITON + L
 
 
 
+---
+
 ## 💡 Motivation
 
 일반적인 Virtual Try-On(VTON)은 “옷이 입혀진 이미지”를 보여주는 데 집중합니다. 하지만 실제 사용자는 다음 질문을 함께 알고 싶어 합니다.
@@ -174,7 +176,9 @@ StableVITON baseline은 `slightly unstable oversized fit`으로, StableVITON + L
 - 어깨, 소매, 몸통, 기장 중 어느 부분이 실패했거나 위험한가?
 - 입력 pose, parsing, dense pose 같은 artifact가 결과 안정성에 어떤 영향을 주는가?
 
-Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, LoRA adapter save/load smoke, 10k adapter save run까지 검증했습니다.
+Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, LoRA adapter save/load smoke, 10k adapter save run까지 검증했습니다.  
+
+
 
 ## 🎯 Problem Definition
 
@@ -209,6 +213,8 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 - LoRA가 착장 품질을 개선했다는 정량/정성 결론
 - 최종 demo video 업로드
 
+
+
 ## ✨ Key Contributions
 
 1. AIHub 10k full artifact dataset readiness를 검증했습니다.
@@ -218,6 +224,8 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 5. 9995-step 1 epoch-equivalent LoRA training loop를 RTX 4080 환경에서 완료했습니다.
 6. LoRA parameter만 저장/로드하는 adapter save/load smoke를 검증했습니다.
 7. Dataset, output, checkpoint, generated image를 Git에 포함하지 않는 실험 문서화 체계를 유지했습니다.
+
+
 
 ## 🧩 System Overview
 
@@ -231,8 +239,9 @@ flowchart LR
   F --> G[Adapter Save / Load]
   G --> H[Future Inference Comparison]
   H --> I[Fit Reasoning UI]
-```
+```  
 
+   
 ## 👥 팀 역할 및 협업 방식
 
 이 프로젝트는 백엔드/API, 프론트엔드 UI, 데이터 전처리, StableVITON/LoRA 학습 실험을 PC별로 나누어 진행했습니다.  
@@ -296,6 +305,7 @@ PC 3는 PC 2에서 전달받은 dataset을 이용해 StableVITON-compatible layo
 7. 10k 9995-step 1 epoch-equivalent LoRA training 수행
 8. LoRA adapter save/load smoke 및 9995-step adapter save run 수행
 
+  
 ## 🌿 Git Flow
 
 이 프로젝트는 `dev` branch를 기준 통합 브랜치로 사용하는 Git Flow 방식으로 작업했습니다.  
@@ -351,6 +361,10 @@ docs(#111): README 고도화
 - 실험 결과는 `docs/experiments/`에 기록하고, README에는 핵심 결과만 요약했습니다.
 - 팀원별 작업 내역이 Git log와 PR 기록에 남도록 기능/문서/실험 단위로 commit과 PR을 나누어 진행했습니다.
 
+
+
+
+  
 ## 📦 Dataset and Artifacts
 
 사용 dataset은 AIHub 쉐이프리스 의류 및 포즈 데이터 기반으로 PC2/PC3 작업 흐름에서 구성한 10k artifact dataset입니다.
@@ -393,6 +407,8 @@ StableVITON-compatible layout에서 검증한 artifact는 다음과 같습니다
 | artifact_errors | 0 |
 | backend_loader_errors | 0 |
 
+
+    
 ## 🧠 Model and Training
 
 ### Base Model
@@ -422,6 +438,7 @@ Example target pattern:
 model.diffusion_model.input_blocks.*.transformer_blocks.0.attn*.to_q
 ```
 
+   
 ## 🧪 Compared / Referenced VTON Models
 
 이번 프로젝트는 StableVITON을 중심으로 학습 pipeline을 구축했지만, VTON 모델 후보를 검토하는 과정에서 IDM-VTON과 CATVITON/CATVTON 계열도 비교 대상으로 참고했습니다.
@@ -517,8 +534,7 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 ### Experiment 6. Demo Pair Quality Score Comparison
 
 이 실험은 동일한 demo pair에 대해 StableVITON baseline과 StableVITON + LoRA 결과를 비교한 UI-level quality score입니다.
-
-> 이 점수는 전체 test set benchmark가 아니라, 데모 화면에서 사용한 특정 입력 쌍에 대한 비교 지표입니다.  
+ 
 > LoRA가 일반적으로 모든 입력에서 성능을 개선한다고 결론 내리기 위해서는 추가적인 test set 기반 정량 평가가 필요합니다.
 
 | Metric | StableVITON | StableVITON + LoRA | Diff |
@@ -822,6 +838,7 @@ Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하�
 - README에 demo GIF 또는 video link 추가
 - fit confidence, explanation, hotspot annotation을 최종 user flow와 연결
 
+
 ## 🙏 참고자료 및 출처
 
 이 프로젝트는 아래 연구와 도구를 참고하거나 기반으로 구성했습니다.  
@@ -835,6 +852,7 @@ Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하�
 - DensePose: Guler et al., “DensePose: Dense Human Pose Estimation In The Wild,” CVPR 2018. [Project page](https://densepose.org/), [arXiv](https://arxiv.org/abs/1802.00434)
 - OpenPose: CMU Perceptual Computing Lab OpenPose repository and related pose estimation papers. [GitHub](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
 - PyTorch, PyTorch Lightning, FastAPI, Next.js, React, TypeScript 등 open-source tooling을 training/backend/frontend pipeline 구성에 사용했습니다.
+
 
 ## 📄 License
 
