@@ -176,7 +176,7 @@ StableVITON baseline은 `slightly unstable oversized fit`으로, StableVITON + L
 - 어깨, 소매, 몸통, 기장 중 어느 부분이 실패했거나 위험한가?
 - 입력 pose, parsing, dense pose 같은 artifact가 결과 안정성에 어떤 영향을 주는가?
 
-Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, LoRA adapter save/load smoke, 10k adapter save run까지 검증했습니다.  
+Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, LoRA adapter save/load smoke, 10k adapter save run까지 검증했습니다.  
 
 
 
@@ -612,7 +612,7 @@ StableVITON + LoRA 결과는 demo pair 기준으로 모든 세부 항목에서 b
 | Item | Description |
 | --- | --- |
 | Problem | StableVITON 전체 모델은 약 1.8B parameter 규모라서 전체 fine-tuning은 시간과 VRAM 부담이 컸습니다. |
-| Cause | 전체 모델을 학습하면 실험 반복이 어렵고, 제한된 제출 시간 안에 10k 학습을 완료하기 어렵습니다. |
+| Cause | 전체 모델을 학습하면 실험 반복이 어렵고, 제한된 시간 안에 10k 학습을 완료하기 어렵습니다. |
 | Fix | 일부 attention Linear module에만 LoRA adapter를 삽입하고, 기존 StableVITON parameter는 freeze했습니다. |
 | Result | `inserted_lora_module_count=8`, `trainable_params_after_lora=30,720`, `trainable_ratio=about 0.00167%`로 학습 대상을 크게 줄였습니다. |
 
@@ -620,7 +620,7 @@ StableVITON + LoRA 결과는 demo pair 기준으로 모든 세부 항목에서 b
 
 | Item | Description |
 | --- | --- |
-| Problem | 10k 전체 9995-step 학습을 제출 시간 안에 완료할 수 있을지 처음에는 불확실했습니다. |
+| Problem | 10k 전체 9995-step 학습을 시간 안에 완료할 수 있을지 처음에는 불확실했습니다. |
 | Cause | 1-step sanity는 model load 시간이 포함되어 실제 step time을 판단하기 어려웠습니다. |
 | Fix | `1-step sanity → 100-step benchmark → 9995-step run` 순서로 단계적으로 검증했습니다. |
 | Result | 100-step benchmark에서 `avg_step_time_sec=1.4086`을 확인했고, 이후 9995-step 1 epoch-equivalent training을 완료했습니다. 최종 결과는 `steps_completed=9995`, `avg_step_time_sec=0.9952`, `loss_nan=false`였습니다. |
