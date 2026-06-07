@@ -1,232 +1,400 @@
-# Fit-aware Virtual Try-On Web Prototype
+# Fit-Reasoning VTON
 
-이 저장소는 **Fit-aware Virtual Try-On Web Prototype**을 위한 저장소입니다.
+StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결합하기 위한 컴퓨터비전 캡스톤 프로젝트입니다.
 
-기존 프로젝트명인 **Fit-Confidence Virtual Try-On**의 방향을 이어받되, MVP는 StableVITON 기반 가상 착장 생성과 CV 기반 fit 분석을 결합한 웹 프로토타입으로 정리합니다.
+이 프로젝트의 목표는 사람 이미지와 의류 이미지를 입력받아 가상 착장 결과를 만들고, 단순히 이미지만 보여주는 것이 아니라 fit label, confidence score, fit explanation, hotspot annotation까지 연결 가능한 Virtual Try-On 시스템을 만드는 것입니다.
 
-한 줄로 요약하면 다음과 같습니다.
+> 현재 README는 제출용 정리 문서입니다. 실제 완료한 실험 결과와 아직 후속 작업으로 남은 항목을 명확히 구분합니다.
 
-> StableVITON으로 생성한 VTON 결과를 CV 기반 fit analyzer로 분석하고, confidence score와 자연어 fit explanation을 웹에서 제공하는 제품형 프로토타입
+## Demo
 
-본 프로젝트는 논문 수준의 신규 VTON 모델 개발이 아니라, RTX 4080 16GB GPU 환경에서 1개월 안에 실제 동작하는 제품형 AI 시스템을 만드는 것이 목표입니다.
+Demo video will be added / submitted separately.
 
-## 문제의식
+현재 Git에는 실제 데모 영상, 결과 이미지, checkpoint, dataset을 포함하지 않습니다.
 
-기존 가상 착장 모델은 그럴듯한 이미지를 생성하지만, 생성 결과가 얼마나 신뢰 가능한지 또는 어떤 부분이 어색한지 설명하지 못하는 경우가 많습니다. 사용자는 결과 이미지가 실패했는지, 포즈나 parsing 문제가 있는지, 옷의 형태가 충분히 보존되었는지 판단하기 어렵습니다.
+<!-- TODO: Add demo flow screenshot after final video export. -->
+<!-- Suggested placeholder path: assets/readme/demo_flow.png -->
+<!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
 
-본 프로젝트는 생성 이미지 자체만 보여주는 것을 넘어서, 컴퓨터비전 기반 분석 결과를 함께 제공하는 방향을 다룹니다.
+## Motivation
 
-## MVP 목표
+일반적인 Virtual Try-On(VTON)은 “옷이 입혀진 이미지”를 보여주는 데 집중합니다. 하지만 실제 사용자는 다음 질문을 함께 알고 싶어 합니다.
 
-MVP 핵심 기능은 다음과 같습니다.
+- 생성 결과가 어느 정도 믿을 만한가?
+- 핏이 타이트한지, 레귤러한지, 루즈한지 설명할 수 있는가?
+- 어깨, 소매, 몸통, 기장 중 어느 부분이 실패했거나 위험한가?
+- 입력 pose, parsing, dense pose 같은 artifact가 결과 안정성에 어떤 영향을 주는가?
 
-- 사용자 전신 이미지 업로드
-- 의류 이미지 업로드
-- 키 / 몸무게 / 평소 사이즈 입력
-- StableVITON 기반 Virtual Try-On 생성
-- DWPose / SCHP 기반 CV preprocessing
-- CV 기반 fit 분석
-- confidence score 제공
-- 자연어 fit explanation 제공
-- low confidence warning 제공
-- 결과 이미지 위 hotspot annotation 제공
-- 웹 기반 인터랙티브 결과 UI 제공
+Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, adapter save/load smoke까지 검증했습니다.
 
-현재 단계는 계획 수정 및 문서화 단계입니다. StableVITON inference 성공, 성능 수치, 결과 이미지, 데모 영상은 아직 README에 기록하지 않습니다.
+## Problem Definition
 
-## 전체 Pipeline
+### Input
 
-```text
-User Input
--> Input Quality Check
--> Pose Estimation, DWPose
--> Human Parsing, SCHP
--> StableVITON Inference
--> Fit Analyzer
--> Confidence Scoring
--> Fit Reasoning
--> Web UI Visualization
+- Person image
+- Cloth image
+- Optional user body info: height, weight, usual size
+
+### Target Output
+
+- Try-on result image
+- Fit label
+- Confidence score
+- Fit score details
+- Natural language fit explanation
+- Hotspot annotation for visible risk areas
+
+### Current Implementation Stage
+
+현재 구현/검증의 중심은 StableVITON/LoRA training pipeline입니다.
+
+- StableVITON-compatible AIHub 10k artifact dataset layout 준비 완료
+- StableVITON `train.py` compatibility smoke 성공
+- 일부 attention Linear module 대상 LoRA runner 구현
+- 10k 9995-step 1 epoch-equivalent LoRA training loop 성공
+- LoRA adapter save/load smoke 성공
+- Demo compare API와 frontend compare page 구조 준비
+
+아래 항목은 아직 완료로 간주하지 않습니다.
+
+- 저장된 10k adapter 기반 inference comparison
+- StableVITON baseline vs LoRA 실제 이미지 비교
+- LoRA가 착장 품질을 개선했다는 정량/정성 결론
+- 최종 demo video 업로드
+
+## Key Contributions
+
+1. AIHub 10k full artifact dataset readiness를 검증했습니다.
+2. StableVITON 학습 포맷에 맞는 9995개 train-only layout을 구성했습니다.
+3. StableVITON external repo를 수정하지 않고 import하는 LoRA runner를 구축했습니다.
+4. 전체 모델 full fine-tuning이 아니라 일부 attention Linear module에 LoRA adapter를 삽입했습니다.
+5. 9995-step 1 epoch-equivalent LoRA training loop를 RTX 4080 환경에서 완료했습니다.
+6. LoRA parameter만 저장/로드하는 adapter save/load smoke를 검증했습니다.
+7. Dataset, output, checkpoint, generated image를 Git에 포함하지 않는 실험 문서화 체계를 유지했습니다.
+
+## System Overview
+
+```mermaid
+flowchart LR
+  A[Person Image] --> C[Artifact Preparation]
+  B[Cloth Image] --> C
+  C --> D[StableVITON Layout]
+  D --> E[StableVITON Baseline]
+  D --> F[LoRA Training]
+  F --> G[Adapter Save / Load]
+  G --> H[Future Inference Comparison]
+  H --> I[Fit Reasoning UI]
 ```
 
-## 모델 전략
+## Dataset and Artifacts
 
-### StableVITON
+사용 dataset은 AIHub 쉐이프리스 의류 및 포즈 데이터 기반으로 PC2/PC3 작업 흐름에서 구성한 10k artifact dataset입니다.
 
-StableVITON을 MVP main VTON backbone으로 사용합니다.
+Dataset은 용량과 라이선스 문제로 Git에 포함하지 않습니다.
 
-PC1에서 StableVITON inference와 FastAPI API server를 실행하고, `/api/tryon` 요청이 들어오면 StableVITON inference를 통해 result image를 생성하는 방향으로 갑니다.
+### StableVITON Layout Summary
 
-StableVITON 외부 저장소, checkpoint, dataset, generated image는 본 저장소에 커밋하지 않습니다.
+| Item | Value |
+| --- | ---: |
+| train_count | 9995 |
+| test_count | 0 |
+| ready_count | 9995 |
+| not_ready_count | 0 |
+| original dataset modified | false |
 
-### IDM-VTON
+### Artifact Folders
 
-IDM-VTON은 MVP에 통합하지 않습니다.
+StableVITON-compatible layout에서 검증한 artifact는 다음과 같습니다.
 
-PR #8에서 정리한 IDM-VTON local Gradio demo smoke test 기록은 삭제하지 않고 비교 실험 자산으로 유지합니다. 다만 IDM-VTON은 MVP 제품 flow에 통합하지 않으며, 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 둡니다.
+| Artifact | Role |
+| --- | --- |
+| `image/` | person/model image |
+| `cloth/` | product clothing image |
+| `worn/` | target worn image candidate |
+| `fit/` | fit feature / annotation JSON |
+| `agnostic-v3.2/` | person agnostic image |
+| `agnostic-mask/` | agnostic mask |
+| `openpose-json/` | pose keypoint JSON |
+| `image-parse/` | human parsing artifact |
+| `cloth-mask/` | clothing mask |
+| `image-densepose/` | DensePose-style artifact |
+| `gt_cloth_warped_mask/` | StableVITON ATV-loss related mask candidate |
 
-PC3에서 IDM-VTON을 다룰 경우 역할은 다음으로 제한합니다.
+### Strict Artifact Smoke
 
-- StableVITON batch evaluation 이후의 optional VTON comparison
-- StableVITON 대비 설치 난이도, VRAM 사용량, inference time, 결과 품질, API 통합 난이도 기록
-- IDM-VTON 작업이 오래 막히면 즉시 중단하고 StableVITON batch evaluation과 fit analyzer 실험을 우선
+| Metric | Value |
+| --- | ---: |
+| checked_count | 9995 |
+| artifact_errors | 0 |
+| backend_loader_errors | 0 |
 
-### CatVTON
+## Model and Training
 
-CatVTON은 MVP 범위에서는 제외하며, 후속 optional baseline으로만 검토합니다.
+### Base Model
 
-### LoRA
+- Base VTON backbone: StableVITON
+- External checkout: `D:\GitHub\StableVITON`
+- Repo-side runner: `backend/training/scripts/run_stableviton_lora_tiny_smoke.py`
 
-LoRA는 한 달 MVP에서 제외하며, 7개월 고도화 단계에서 fit control 필요성이 명확해졌을 때 선택적으로 검토합니다.
+StableVITON source code, pretrained weights, generated images, and dataset files are not committed to this repository.
 
-1개월 MVP의 핵심 기능은 `StableVITON 생성 이미지 + CV 기반 fit analyzer + confidence score + 자연어 fit explanation + 웹 UI`입니다.
+### LoRA Strategy
 
-## Fit-aware Reasoning Layer
+이번 실험은 StableVITON 전체 모델을 full fine-tuning하지 않습니다. StableVITON 내부 일부 attention Linear module에 lightweight LoRA adapter를 삽입하고 LoRA parameter만 학습 대상으로 둡니다.
 
-Fit-aware Reasoning Layer는 StableVITON 결과를 그대로 신뢰하지 않고, 다음 컴퓨터비전 단서를 활용해 결과 품질과 핏 경향을 해석합니다.
+| Metric | Value |
+| --- | ---: |
+| inserted_lora_module_count | 8 |
+| total_params | 1,838,680,959 |
+| trainable_params_after_lora | 30,720 |
+| trainable_ratio | about 0.00167% |
 
-- pose/keypoint 안정성
-- DWPose 기반 pose extraction
-- SCHP 기반 human parsing
-- silhouette 변화
-- garment preservation
-- 입력 이미지 품질
-- 착장 결과 왜곡 여부
+LoRA target module은 StableVITON UNet diffusion model 내부 transformer attention의 `to_q` Linear layer입니다.
 
-정확한 신체 치수 측정이나 실제 의류 사이즈 추천은 목표로 하지 않습니다.
+Example target pattern:
 
-## 역할 분리
+```text
+model.diffusion_model.input_blocks.*.transformer_blocks.0.attn*.to_q
+```
 
-요약 역할은 다음과 같습니다. 자세한 내용은 [PC / 노트북 역할](docs/pc_roles.md)을 참고합니다.
+## Experiments / Results
 
-- 노트북 1: Frontend, Next.js UI, localhost 개발, PC1 FastAPI 연결 테스트
-- 노트북 2: Backend 코드 개발, Git / Issue / PR 관리, PC1 / PC2 / PC3 SSH 실행 관리
-- PC1: StableVITON main inference server, FastAPI API server, demo API, batch job log
-- PC2: DWPose, SCHP, input quality check, fit feature extraction
-- PC3: StableVITON batch evaluation, failure case collection, fit threshold experiments, confidence scoring experiments, optional VTON comparison
+모든 결과는 training/smoke 관측값입니다. 아직 try-on image quality benchmark나 baseline vs LoRA inference comparison 결과가 아닙니다.
 
-PC3는 PC1 StableVITON API가 최소 동작한 뒤, batch evaluation과 confidence 실험을 담당합니다.
+### Experiment 1. 10k Layout Validation
 
-## API 계획
+| Metric | Value |
+| --- | ---: |
+| train_count | 9995 |
+| test_count | 0 |
+| ready_count | 9995 |
+| not_ready_count | 0 |
 
-FastAPI backend는 다음 endpoint를 기준으로 설계합니다. 자세한 contract는 [API Contract](docs/api_contract.md)를 참고합니다.
+### Experiment 2. LoRA 100-Step Benchmark
+
+| Metric | Value |
+| --- | ---: |
+| steps_completed | 100 |
+| avg_step_time_sec | 1.4086 |
+| final_loss | 0.3011031448841095 |
+| loss_nan | false |
+| peak_vram_mb | 8887.85 |
+
+### Experiment 3. LoRA 9995-Step 1 Epoch-Equivalent Training
+
+This run verified the training loop. It did not save a LoRA adapter or generated image.
+
+| Metric | Value |
+| --- | ---: |
+| train_dataset_len | 9995 |
+| steps_completed | 9995 |
+| elapsed_sec | 9946.5927 |
+| avg_step_time_sec | 0.9952 |
+| first_loss | 0.06275913864374161 |
+| final_loss | 0.626366138458252 |
+| loss_nan | false |
+| peak_vram_mb | 8887.85 |
+| checkpoint_created | false |
+| sample_created | false |
+
+### Experiment 4. LoRA Adapter Save/Load Smoke
+
+This run verified adapter persistence using 1-step smoke. It is not a quality comparison.
+
+| Metric | Save | Load |
+| --- | ---: | ---: |
+| status | success | success |
+| steps_completed | 1 | 1 |
+| loss_nan | false | false |
+| lora_adapter_saved | true | false |
+| lora_adapter_loaded | false | true |
+| key_count | 16 | 16 |
+| file_size_mb | 0.1236 | 0.1236 |
+| missing_keys | - | `[]` |
+| unexpected_keys | - | `[]` |
+| shape_mismatch_keys | - | `[]` |
+| peak_vram_mb | 8887.85 | 8887.85 |
+
+## Results Status
+
+Completed:
+
+- AIHub 10k full artifact dataset readiness
+- StableVITON-compatible 9995-sample train layout
+- StableVITON `train.py` compatibility smoke
+- LoRA runner with 8 inserted modules
+- 9995-step 1 epoch-equivalent training loop
+- LoRA adapter save/load 1-step smoke
+- Demo compare backend API skeleton
+- Next.js demo compare page structure
+
+Not completed yet:
+
+- 9995-step adapter save result
+- Saved 10k adapter based inference
+- Baseline StableVITON vs LoRA generated image comparison
+- Final demo video in README
+
+## Usage
+
+The commands below assume:
+
+- Windows / PowerShell
+- Conda env: `D:\conda-envs\vton`
+- External StableVITON repo: `D:\GitHub\StableVITON`
+- Local dataset root exists and is ignored by Git
+
+### 1-Step LoRA Adapter Save Smoke
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny_smoke.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_layout_10k_train `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_save `
+  --max-steps 1 `
+  --batch-size 1 `
+  --max-lora-modules 8 `
+  --no-prepare-smoke-data `
+  --save-lora-path D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_save\lora_adapter.pt
+```
+
+### 1-Step LoRA Adapter Load Smoke
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny_smoke.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_layout_10k_train `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_load `
+  --max-steps 1 `
+  --batch-size 1 `
+  --max-lora-modules 8 `
+  --no-prepare-smoke-data `
+  --load-lora-path D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_save\lora_adapter.pt
+```
+
+### Backend API
+
+```powershell
+cd backend
+python -m uvicorn backend.app.main:app --reload
+```
+
+Implemented API routes include:
 
 - `GET /api/health`
 - `POST /api/tryon`
 - `GET /api/job/{job_id}`
 - `GET /api/result/{job_id}`
+- `GET /api/demo/samples`
+- `GET /api/demo/artifact-compare/{pair_id}`
+- `GET /api/demo/model-compare/{pair_id}`
 
-API response 예시는 실제 inference 결과가 아니라 프론트엔드 연동을 위한 contract example입니다.
+### Frontend
 
-## Backend 구조 계획
-
-backend는 다음 구조를 목표로 합니다. 이번 문서 작업에서는 실제 backend 코드를 구현하지 않습니다.
-
-```text
-backend/
-  app/
-    main.py
-    api/
-      tryon.py
-      health.py
-    core/
-      config.py
-      paths.py
-      job_store.py
-      queue.py
-    services/
-      stableviton_service.py
-      pose_service.py
-      parsing_service.py
-      quality_checker.py
-      fit_analyzer.py
-      confidence.py
-      reasoning.py
-    schemas/
-      tryon.py
-      result.py
-    workers/
-      tryon_worker.py
-  scripts/
-    run_test_jobs.py
-    batch_preprocess.py
-    batch_fit_features.py
-  configs/
-    stableviton.yaml
-  datasets/
-    raw/
-    processed/
-  outputs/
-  logs/
-  models/
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
-`backend/outputs/`, datasets, logs, external model files, checkpoint, generated image는 git에 커밋하지 않는 방향으로 관리합니다.
+Current frontend direction:
 
-## 데이터 후보
+- Next.js based demo UI
+- `/model-compare` route
+- Artifact/model compare components
+- Confidence badge, fit explanation, detailed analysis tabs, hotspot overlay planned/structured
+- Real generated comparison images are not yet committed
 
-- 직접 촬영한 소규모 샘플 이미지
-- AIHub "쉐이프리스 의류 및 포즈 데이터" 기반 fit analyzer / keypoint / segmentation / confidence scoring 기준 설계
-- VITON-HD 후보 검토
-- DressCode 후보 검토
-- FIT 데이터셋 기반 fit-aware scoring은 후속 검토 또는 참고 데이터셋 방향으로 유지
+## Project Structure
 
-데이터 관리 원칙은 다음과 같습니다.
+```text
+fit-reasoning-vton/
+  README.md
+  backend/
+    app/
+      api/
+        demo.py
+        health.py
+        tryon.py
+      schemas/
+      services/
+      workers/
+    demo/
+      analysis/
+      samples/
+      assets/              # ignored, real demo assets go here locally
+    training/
+      datasets/
+      scripts/
+        prepare_stableviton_layout.py
+        run_stableviton_lora_tiny_smoke.py
+        smoke_test_lora_dataset.py
+        dataloader_dry_run.py
+  frontend/
+    src/
+      app/
+        model-compare/
+        artifact-compare/
+      components/
+        demo/
+  docs/
+    experiments/
+    setup/
+    aihub/
+    data/
+  scripts/
+```
 
-- AIHub 원본 이미지, annotation, JSON 파일은 공개 GitHub에 업로드하지 않습니다.
-- 원본 데이터를 외부에 공유하지 않습니다.
-- 공개 저장소에는 schema, example CSV, 문서만 포함합니다.
-- 데이터 출처를 README 또는 발표자료에 명시합니다.
-- 본 저장소에는 원본 데이터셋 이미지, annotation 파일, 생성 이미지를 포함하지 않습니다.
+## Documentation Links
 
-## 현재 범위와 하지 않을 것
+- [StableVITON LoRA 10k epoch pilot](docs/experiments/pc3_stableviton_lora_10k_epoch_pilot.md)
+- [LoRA save/load smoke and inference comparison prep](docs/experiments/pc3_stableviton_lora_save_load_inference_comparison.md)
+- [10k full artifact smoke and training log](docs/experiments/pc3_lora_10k_full_artifact_smoke_and_training.md)
+- [StableVITON AIHub layout prepare](docs/experiments/stableviton_aihub_layout_prepare.md)
+- [Demo backend API contract](docs/experiments/demo_backend_api_contract.md)
+- [Demo asset package contract](docs/experiments/demo_asset_package_contract.md)
 
-이번 MVP에서 하지 않을 것은 다음과 같습니다.
+## Git and Data Policy
 
-- 정확한 신체 치수 예측
-- 실제 의류 사이즈 추천
-- VTON 모델을 처음부터 학습
-- StableVITON 외부 저장소를 본 저장소에 복사
-- checkpoint, dataset, generated image 커밋
-- CatVTON을 MVP active baseline으로 통합
-- LoRA를 MVP 필수 기능으로 포함
-- 검증되지 않은 성능 수치 또는 fake result 작성
+The repository intentionally excludes:
 
-## 주요 문서
+- `backend/datasets/**`
+- `backend/training/outputs/**`
+- `backend/outputs/**`
+- `backend/logs/**`
+- `backend/demo/assets/**`
+- `*.pt`, `*.pth`, `*.ckpt`, `*.safetensors`
+- generated images
+- large archives
+- raw AIHub data
 
-- [프로젝트 개요](docs/project_overview.md)
-- [로드맵](docs/roadmap.md)
-- [시스템 아키텍처](docs/system_architecture.md)
-- [PC / 노트북 역할](docs/pc_roles.md)
-- [API Contract](docs/api_contract.md)
-- [환경 설정](docs/setup/environment.md)
-- [StableVITON 외부 설정](docs/setup/stableviton_external_setup.md)
-- [StableVITON PC1 setup log template](docs/experiments/stableviton_pc1_setup_log_template.md)
-- [StableVITON PC1 CLI smoke test log](docs/experiments/stableviton_cli_smoke_test_pc1_log.md)
-- [IDM-VTON 외부 설정](docs/setup/idm_vton_external_setup.md)
-- [IDM-VTON 4080 smoke test 로그](docs/experiments/idm_vton_smoke_test_4080_log.md)
-- [PC3 batch evaluation 계획](docs/experiments/pc3_batch_evaluation_plan.md)
-- [데이터셋 계획](docs/data/dataset_plan.md)
-- [실험 계획](docs/experiments/experiment_plan.md)
+Only source code, schemas, scripts, docs, and small example JSON files are intended to be committed.
 
-## 협업 규칙
+## Limitations
 
-- [Git Workflow](docs/conventions/git_workflow.md)
-- [Branch Convention](docs/conventions/branch_convention.md)
-- [Commit Convention](docs/conventions/commit_convention.md)
-- [Issue / PR Convention](docs/conventions/issue_pr_convention.md)
+- PR #107 verified a 9995-step training loop, but it did not save checkpoint/sample outputs.
+- PR #110 verified LoRA adapter save/load with 1-step smoke, but the 9995-step adapter save result is still a follow-up run.
+- The README does not include actual baseline vs LoRA inference images yet.
+- The current LoRA experiment does not prove visual quality improvement.
+- Fit confidence, fit explanation, and hotspot annotation are system goals and UI/API directions, but final model-linked reasoning output still requires integration.
+- Dataset and output artifacts are excluded from Git due to size and license constraints.
 
-## Third-Party Notice
+## Roadmap
 
-본 프로젝트는 StableVITON을 MVP main VTON backbone으로 외부 참조합니다. IDM-VTON은 시간이 남을 경우에만 진행하는 후순위 대체 VTON 비교 실험으로 외부 참조하며, CatVTON은 MVP 범위에서는 제외하고 후속 optional baseline으로만 검토합니다.
+- Complete 9995-step adapter save run.
+- Run saved-adapter inference smoke.
+- Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
+- Add at least 3 demo pairs to local `backend/demo/assets/**`.
+- Validate demo assets with strict validation.
+- Connect final images to the demo compare UI.
+- Add demo GIF or video link to this README.
+- Integrate fit confidence, explanation, and hotspot annotation into the final user flow.
 
-외부 VTON 모델의 코드, checkpoint, demo 자료는 각 원저작자의 라이선스와 사용 조건을 확인해야 합니다. 외부 모델 코드, checkpoint, 생성 결과 이미지, 대용량 데이터셋은 본 저장소에 커밋하지 않습니다.
+## References / Acknowledgements
 
-본 프로젝트의 핵심 기여는 VTON 모델 자체 구현이 아니라, VTON 결과를 해석하는 Fit-aware Reasoning Layer와 confidence UX입니다.
+This project builds on or references the following works and tools. External model code, weights, datasets, and generated assets are not redistributed in this repository.
 
-## Dataset Notice
-
-VITON-HD와 DressCode 데이터셋은 각 원 배포처의 라이선스와 사용 조건을 확인해야 합니다. FIT 데이터셋 기반 fit-aware scoring은 후속 검토 또는 참고 데이터셋 방향으로 유지합니다.
-
-AIHub "쉐이프리스 의류 및 포즈 데이터"는 fit analyzer, keypoint / segmentation 기준 설계, confidence scoring 실험 방향을 잡기 위한 참고 데이터로 활용합니다. 원본 이미지, annotation, JSON 파일은 공개 GitHub에 업로드하지 않고 외부에 공유하지 않습니다. 공개 저장소에는 schema, example CSV, 문서만 포함하며, 데이터 출처는 README 또는 발표자료에 명시합니다.
-
-사람 이미지가 포함될 수 있으므로 공개 범위와 사용 목적을 주의해서 관리합니다.
+- StableVITON: Kim et al., “StableVITON: Learning Semantic Correspondence with Latent Diffusion Model for Virtual Try-On,” CVPR 2024. [GitHub](https://github.com/rlawjdghek/StableVITON), [arXiv](https://arxiv.org/abs/2312.01725)
+- LoRA: Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models,” ICLR 2022. [arXiv](https://arxiv.org/abs/2106.09685)
+- AIHub 쉐이프리스 의류 및 포즈 데이터. [AIHub dataset page](https://www.aihub.or.kr/aihubdata/data/view.do?aihubDataSe=data&currMenu=115&dataSetSn=71535&topMenu=)
+- DensePose: Guler et al., “DensePose: Dense Human Pose Estimation In The Wild,” CVPR 2018. [Project page](https://densepose.org/), [arXiv](https://arxiv.org/abs/1802.00434)
+- OpenPose: CMU Perceptual Computing Lab OpenPose repository and related pose estimation papers. [GitHub](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
+- PyTorch, PyTorch Lightning, FastAPI, Next.js, React, TypeScript, and related open-source tooling are used for the training/backend/frontend pipeline.
