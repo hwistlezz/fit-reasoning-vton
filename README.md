@@ -357,7 +357,7 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 
 ## ✅ Results Status
 
-Completed:
+### 완료한 작업
 
 - AIHub 10k full artifact dataset readiness
 - StableVITON-compatible 9995-sample train layout
@@ -372,16 +372,16 @@ Completed:
 - Baseline StableVITON vs LoRA generated image comparison
 - Final demo video in README
 
-## 🚀 Usage
+## 🚀 실행 방법
 
-The commands below assume:
+아래 명령은 다음 환경을 기준으로 합니다.
 
-- Windows / PowerShell
-- Conda env: `D:\conda-envs\vton`
-- External StableVITON repo: `D:\GitHub\StableVITON`
-- Local dataset root exists and is ignored by Git
+- 운영체제: Windows / PowerShell
+- Conda 환경: `D:\conda-envs\vton`
+- 외부 StableVITON 저장소: `D:\GitHub\StableVITON`
+- 로컬 dataset root는 별도로 준비되어 있어야 하며 Git에는 포함하지 않습니다.
 
-### 1-Step LoRA Adapter Save Smoke
+### 1-step LoRA adapter 저장 smoke
 
 ```powershell
 D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny_smoke.py `
@@ -394,7 +394,7 @@ D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny
   --save-lora-path D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_save\lora_adapter.pt
 ```
 
-### 1-Step LoRA Adapter Load Smoke
+### 1-step LoRA adapter load smoke
 
 ```powershell
 D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny_smoke.py `
@@ -407,14 +407,29 @@ D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny
   --load-lora-path D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_save_load_1step_save\lora_adapter.pt
 ```
 
-### Backend API
+### 9995-step LoRA adapter 저장 run
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\run_stableviton_lora_tiny_smoke.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_layout_10k_train `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_10k_adapter_save `
+  --max-steps 9995 `
+  --batch-size 1 `
+  --max-lora-modules 8 `
+  --no-prepare-smoke-data `
+  --save-lora-path D:\GitHub\fit-reasoning-vton\backend\training\outputs\stableviton_lora_10k_adapter_save\lora_adapter.pt
+```
+
+생성되는 `lora_adapter.pt`는 Git에 포함하지 않습니다.
+
+### Backend API 실행
 
 ```powershell
 cd backend
 python -m uvicorn backend.app.main:app --reload
 ```
 
-Implemented API routes include:
+현재 준비된 API route는 다음과 같습니다.
 
 - `GET /api/health`
 - `POST /api/tryon`
@@ -424,7 +439,7 @@ Implemented API routes include:
 - `GET /api/demo/artifact-compare/{pair_id}`
 - `GET /api/demo/model-compare/{pair_id}`
 
-### Frontend
+### Frontend 실행
 
 ```powershell
 cd frontend
@@ -432,15 +447,15 @@ npm install
 npm run dev
 ```
 
-Current frontend direction:
+현재 frontend 방향은 다음과 같습니다.
 
-- Next.js based demo UI
+- Next.js 기반 demo UI
 - `/model-compare` route
-- Artifact/model compare components
-- Confidence badge, fit explanation, detailed analysis tabs, hotspot overlay planned/structured
-- Real generated comparison images are not yet committed
-
-## 🗂️ Project Structure
+- artifact/model comparison component
+- confidence badge, fit explanation, detailed analysis tab, hotspot overlay 구조 준비
+- 실제 생성 비교 이미지는 아직 Git에 포함하지 않음
+- 
+## 🗂️ 프로젝트 구조
 
 ```text
 fit-reasoning-vton/
@@ -457,7 +472,7 @@ fit-reasoning-vton/
     demo/
       analysis/
       samples/
-      assets/              # ignored, real demo assets go here locally
+      assets/
     training/
       datasets/
       scripts/
@@ -480,7 +495,7 @@ fit-reasoning-vton/
   scripts/
 ```
 
-## 📚 Documentation Links
+## 📚 문서 링크
 
 - [StableVITON LoRA 10k epoch pilot](docs/experiments/pc3_stableviton_lora_10k_epoch_pilot.md)
 - [LoRA save/load smoke and inference comparison prep](docs/experiments/pc3_stableviton_lora_save_load_inference_comparison.md)
@@ -489,9 +504,9 @@ fit-reasoning-vton/
 - [Demo backend API contract](docs/experiments/demo_backend_api_contract.md)
 - [Demo asset package contract](docs/experiments/demo_asset_package_contract.md)
 
-## 🔒 Git and Data Policy
+## 🔒 Git 및 데이터 관리 정책
 
-The repository intentionally excludes:
+이 저장소에는 다음 항목을 포함하지 않습니다.
 
 - `backend/datasets/**`
 - `backend/training/outputs/**`
@@ -499,47 +514,42 @@ The repository intentionally excludes:
 - `backend/logs/**`
 - `backend/demo/assets/**`
 - `*.pt`, `*.pth`, `*.ckpt`, `*.safetensors`
-- generated images
-- large archives
+- generated image
+- large archive
 - raw AIHub data
 
-Only source code, schemas, scripts, docs, and small example JSON files are intended to be committed.
+Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하는 것을 원칙으로 합니다.
 
-## ⚠️ Limitations
+## ⚠️ 한계점
 
-- PR #107 verified a 9995-step training loop, but it did not save checkpoint/sample outputs.
-- PR #110 verified LoRA adapter save/load with 1-step smoke, and the follow-up 9995-step adapter save run was completed locally.
-- The saved adapter file is excluded from Git due to file size and artifact policy.
-- Fit confidence, fit explanation, and hotspot annotation are system goals and UI/API directions, but final model-linked reasoning output still requires integration.
-- Dataset and output artifacts are excluded from Git due to size and license constraints.
+- 현재 LoRA 실험만으로 실제 착장 품질이 개선됐다고 결론 내릴 수는 없습니다.
+- Fit confidence, fit explanation, hotspot annotation은 시스템 목표와 UI/API 방향으로 준비되어 있지만, 최종 모델 기반 reasoning output과의 통합은 추가 작업이 필요합니다.
+- Dataset과 output artifact는 용량 및 라이선스 문제로 Git에 포함하지 않습니다.
 
-## 🛣️ Roadmap
+## 🛣️ 향후 작업
 
-- Run saved-adapter inference smoke.
-- Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
-- Run saved-adapter inference smoke.
-- Generate baseline StableVITON vs LoRA comparison images for selected demo pairs.
-- Compare StableVITON, IDM-VTON, and CATVITON/CATVTON on the same person-cloth pairs.
-- Add qualitative comparison table: StableVITON baseline vs StableVITON+LoRA vs IDM-VTON vs CATVITON/CATVTON.
-- Analyze garment boundary, pose alignment, body distortion, and failure cases.
-- Add at least 3 demo pairs to local `backend/demo/assets/**`.
-- Validate demo assets with strict validation.
-- Connect final images to the demo compare UI.
-- Add demo GIF or video link to this README.
-- Integrate fit confidence, explanation, and hotspot annotation into the final user flow.
+- 동일 person-cloth pair 기준 StableVITON, IDM-VTON, CATVITON/CATVTON 비교
+- StableVITON baseline, StableVITON+LoRA, IDM-VTON, CATVITON/CATVTON 정성 비교표 작성
+- 의류 경계, pose alignment, body distortion, failure case 분석
+- 최소 3개 demo pair를 local `backend/demo/assets/**`에 구성
+- demo asset strict validation 실행
+- 최종 비교 이미지를 demo compare UI에 연결
+- README에 demo GIF 또는 video link 추가
+- fit confidence, explanation, hotspot annotation을 최종 user flow와 연결
 
-## 🙏 References / Acknowledgements
+## 🙏 참고자료 및 출처
 
-This project builds on or references the following works and tools. External model code, weights, datasets, and generated assets are not redistributed in this repository.
+이 프로젝트는 아래 연구와 도구를 참고하거나 기반으로 구성했습니다.  
+외부 model code, pretrained weight, dataset, generated asset은 이 저장소에 재배포하지 않습니다.
 
 - StableVITON: Kim et al., “StableVITON: Learning Semantic Correspondence with Latent Diffusion Model for Virtual Try-On,” CVPR 2024. [GitHub](https://github.com/rlawjdghek/StableVITON), [arXiv](https://arxiv.org/abs/2312.01725)
-- IDM-VTON: Choi et al., “Improving Diffusion Models for Authentic Virtual Try-on in the Wild,” ECCV 2024. Reference VTON model considered for baseline comparison. [Project](https://idm-vton.github.io/), [GitHub](https://github.com/yisol/IDM-VTON), [arXiv](https://arxiv.org/abs/2403.05139)
-- CatVTON / CATVITON: “CatVTON: Concatenation Is All You Need for Virtual Try-On with Diffusion Models,” ICLR 2025. Reference VTON model considered for artifact-aware comparison. [GitHub](https://github.com/Zheng-Chong/CatVTON), [arXiv](https://arxiv.org/abs/2407.15886)
+- IDM-VTON: Choi et al., “Improving Diffusion Models for Authentic Virtual Try-on in the Wild,” ECCV 2024. 후속 baseline comparison 후보로 참고했습니다. [Project](https://idm-vton.github.io/), [GitHub](https://github.com/yisol/IDM-VTON), [arXiv](https://arxiv.org/abs/2403.05139)
+- CatVTON / CATVITON: “CatVTON: Concatenation Is All You Need for Virtual Try-On with Diffusion Models,” ICLR 2025. 후속 artifact-aware VTON comparison 후보로 참고했습니다. [GitHub](https://github.com/Zheng-Chong/CatVTON), [arXiv](https://arxiv.org/abs/2407.15886)
 - LoRA: Hu et al., “LoRA: Low-Rank Adaptation of Large Language Models,” ICLR 2022. [arXiv](https://arxiv.org/abs/2106.09685)
 - AIHub 쉐이프리스 의류 및 포즈 데이터. [AIHub dataset page](https://www.aihub.or.kr/aihubdata/data/view.do?aihubDataSe=data&currMenu=115&dataSetSn=71535&topMenu=)
 - DensePose: Guler et al., “DensePose: Dense Human Pose Estimation In The Wild,” CVPR 2018. [Project page](https://densepose.org/), [arXiv](https://arxiv.org/abs/1802.00434)
 - OpenPose: CMU Perceptual Computing Lab OpenPose repository and related pose estimation papers. [GitHub](https://github.com/CMU-Perceptual-Computing-Lab/openpose)
-- PyTorch, PyTorch Lightning, FastAPI, Next.js, React, TypeScript, and related open-source tooling are used for the training/backend/frontend pipeline.
+- PyTorch, PyTorch Lightning, FastAPI, Next.js, React, TypeScript 등 open-source tooling을 training/backend/frontend pipeline 구성에 사용했습니다.
 
 ## 📄 License
 
