@@ -45,7 +45,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 #### 1. Input / Target / Baseline / LoRA Result Comparison
 
-<img width="904" height="604" alt="스크린샷 2026-06-07 021925" src="https://github.com/user-attachments/assets/e953ca6f-0d9d-4fe3-adf1-43d269aabc4a" />
+<img width="936" height="605" alt="스크린샷 2026-06-07 021810" src="https://github.com/user-attachments/assets/7c3756fe-2aaf-4413-9051-a96921a496db" />
 
 
 첫 번째 화면은 전체 비교 화면입니다.  
