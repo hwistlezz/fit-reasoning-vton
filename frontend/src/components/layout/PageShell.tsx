@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import Navbar from "./Navbar";
 
-// PageShell 컴포넌트는 애플리케이션의 기본 레이아웃을 정의하는 컴포넌트로, 전체 페이지에 공통적으로 적용되는 스타일과 구조를 제공하며, Navbar와 main 콘텐츠 영역을 포함합 
-// children prop을 통해 각 페이지의 고유한 콘텐츠를 main 영역에 렌더링할 수 있도록 설계
 export default function PageShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020817] via-[#061426] to-[#01040A] text-[#E5EDF8]">

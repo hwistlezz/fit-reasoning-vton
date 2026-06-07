@@ -27,10 +27,10 @@ export default function ResultCard({
   variant,
 }: ResultCardProps) {
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80 p-3 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur">
-      <div className="mb-3 flex min-h-14 items-start justify-between gap-3">
+    <article className="flex h-full min-h-[410px] min-w-0 flex-col rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80 p-3 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur xl:min-h-[430px]">
+      <div className="mb-3 flex h-[88px] shrink-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-base font-semibold leading-6 text-[#E5EDF8]">
+          <h3 className="text-[15px] font-semibold leading-5 text-[#E5EDF8]">
             {title}
           </h3>
           <p className="mt-1 text-xs font-medium text-[#9AA8BA]">{helper}</p>
@@ -46,14 +46,14 @@ export default function ResultCard({
       </div>
       <ImageWithFallback
         alt={`${title} preview`}
-        aspectClass="h-[280px] sm:h-[310px] xl:h-[340px]"
-        imageClassName="object-cover"
+        aspectClass="min-h-[230px] flex-1"
+        imageClassName="object-cover object-top"
         label={title}
         src={imageSrc}
       />
       <div
         className={[
-          "mt-3 rounded-lg border px-3 py-2 text-sm leading-5",
+          "mt-3 h-[76px] shrink-0 rounded-lg border px-3 py-2 text-sm leading-5",
           variantStyles[variant],
         ].join(" ")}
       >

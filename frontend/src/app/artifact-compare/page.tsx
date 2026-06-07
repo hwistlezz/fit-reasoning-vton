@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function LegacyCompareRedirect() {
+export default function LegacyArtifactComparePage() {
   redirect("/model-compare");
 }

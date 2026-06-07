@@ -52,8 +52,8 @@ export default function ReliabilityPanel({ reliability }: ReliabilityPanelProps)
           {percent(reliability.result_reliability)}
         </p>
         <p className="mt-4 text-sm leading-6 text-[#9AA8BA]">
-          이 신뢰도는 정답 확률이 아니라 pose visibility, boundary
-          stability, occlusion risk 등을 기반으로 한 분석용 추정값입니다.
+          자세 가시성, 경계선 안정성, 가림 위험도, 생성 위험도를 기반으로
+          산출한 분석용 신뢰도 점수입니다.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

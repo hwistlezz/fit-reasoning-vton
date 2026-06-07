@@ -48,7 +48,7 @@ export default function DetailedAnalysisTabs({
             Detailed Analysis
           </p>
           <h2 className="mt-2 text-xl font-semibold text-[#E5EDF8]">
-            Conditioning and Reliability Views
+            Conditioning & Reliability Analysis
           </h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -82,18 +82,19 @@ export default function DetailedAnalysisTabs({
           />
         ) : null}
         {activeTab === "skeleton" ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="relative overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
+          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
+            <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
               <ImageWithFallback
                 alt="Enhanced StableVITON result with skeleton overlay"
-                aspectClass="aspect-[3/4]"
+                aspectClass="h-full min-h-[360px]"
                 className="border-0"
+                imageClassName="object-cover object-top"
                 label="Skeleton overlay"
                 src={images.enhanced_result}
               />
               <SkeletonOverlay keypoints={analysis.keypoints} />
             </div>
-            <div className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-5">
+            <div className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#38BDF8]">
                 OpenPose
               </p>
@@ -101,10 +102,10 @@ export default function DetailedAnalysisTabs({
                 Percent-coordinate skeleton
               </h3>
               <p className="mt-3 text-sm leading-6 text-[#9AA8BA]">
-                신뢰도가 낮은 keypoint는 제외하고 shoulder, elbow, wrist,
-                hip 연결을 시각화해 포즈 정렬 상태를 확인합니다.
+                OpenPose keypoint를 오버레이해 어깨, 팔꿈치, 손목, 골반의
+                정렬 상태를 확인하고 생성 결과의 자세 안정성을 비교합니다.
               </p>
-              <div className="mt-4 grid gap-2">
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 {analysis.keypoints.map((point) => (
                   <div
                     className="flex items-center justify-between rounded-lg border border-[#6EA5FF]/12 bg-[#061426]/70 px-3 py-2 text-sm"

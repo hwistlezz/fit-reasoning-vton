@@ -9,21 +9,22 @@ type HotspotPanelProps = {
 
 export default function HotspotPanel({ imageSrc, hotspots }: HotspotPanelProps) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.95fr)]">
-      <div className="relative overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
+    <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
+      <div className="relative min-h-[420px] overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
         <ImageWithFallback
           alt="Enhanced StableVITON result with hotspot overlay"
-          aspectClass="aspect-[3/4]"
+          aspectClass="h-full min-h-[420px]"
           className="border-0"
+          imageClassName="object-cover object-top"
           label="Enhanced result"
           src={imageSrc}
         />
         <HotspotOverlay hotspots={hotspots} />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+      <div className="grid h-full gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-4">
         {hotspots.map((hotspot) => (
           <div
-            className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-4"
+            className="min-h-[96px] rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-3"
             key={hotspot.key}
           >
             <div className="flex items-center justify-between gap-3">
@@ -36,7 +37,7 @@ export default function HotspotPanel({ imageSrc, hotspots }: HotspotPanelProps) 
                 </span>
               ) : null}
             </div>
-            <p className="mt-2 text-sm leading-6 text-[#9AA8BA]">
+            <p className="mt-2 text-sm leading-5 text-[#9AA8BA]">
               {hotspot.text}
             </p>
           </div>

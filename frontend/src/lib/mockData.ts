@@ -79,37 +79,37 @@ function analysisFor(index: number): DemoAnalysis {
     pose: {
       label: demoCases[index].pose_type,
       summary:
-        "OpenPose keypoints와 DensePose 영역을 함께 확인해 포즈 정렬과 신체 가시성이 결과에 미치는 영향을 비교합니다.",
+        "OpenPose keypoint와 DensePose 영역을 함께 사용해 자세 정렬, 신체 가시성, 의류 배치 안정성을 분석합니다.",
     },
     hotspots: [
       {
         key: "shoulder",
         label: "Shoulder",
-        text: "어깨선 주변에서 옷 경계가 얼마나 안정적으로 유지되는지 확인합니다.",
+        text: "어깨선과 상의 경계가 사람의 자세에 맞게 안정적으로 정렬되는지 확인합니다.",
         x: 39,
         y: 28,
         value: "0.93",
       },
       {
-        key: "sleeve",
-        label: "Sleeve",
-        text: "소매 길이가 손목 위치와 자연스럽게 맞는지 확인합니다.",
-        x: 69,
-        y: 58,
-        value: "0.91",
-      },
-      {
         key: "torso",
         label: "Torso",
-        text: "몸통 영역에서 의류 질감과 형태가 일관되게 유지되는지 확인합니다.",
+        text: "몸통 영역에서 의류 텍스처와 형태가 자연스럽게 유지되는지 확인합니다.",
         x: 51,
         y: 49,
         value: "0.94",
       },
       {
+        key: "sleeve",
+        label: "Sleeve",
+        text: "팔꿈치와 손목 주변에서 소매 위치가 자세 변화나 가림에도 안정적인지 확인합니다.",
+        x: 69,
+        y: 58,
+        value: "0.91",
+      },
+      {
         key: "length",
         label: "Length",
-        text: "의류 밑단 위치가 실제 착용 기준 이미지와 얼마나 가까운지 확인합니다.",
+        text: "의류 하단 경계가 실제 착용 기준 이미지와 얼마나 일관되게 맞는지 비교합니다.",
         x: 53,
         y: 73,
         value: "0.89",
@@ -124,9 +124,9 @@ function analysisFor(index: number): DemoAnalysis {
       artifact_risk: 0.18 + adjustment,
     },
     densepose_note:
-      "DensePose는 사람의 신체 표면과 포즈 구조를 나타내며, 의류가 신체 위에 더 안정적으로 정렬되도록 돕습니다.",
+      "DensePose는 신체 표면 구조를 제공해 생성된 의류가 보이는 자세를 더 일관되게 따르도록 돕습니다.",
     agnostic_note:
-      "Agnostic mask는 기존 의류 영역을 제거하고 새 의류가 들어갈 영역을 명확하게 표시합니다.",
+      "Agnostic mask는 기존 의류 영역을 제거하고 새 의류가 합성될 위치를 명확하게 지정합니다.",
   };
 }
 
@@ -134,7 +134,7 @@ const modelMetrics: DemoMetric[] = [
   {
     key: "pose_robustness",
     title: "Pose Robustness",
-    description: "포즈가 어렵거나 팔이 겹쳐도 결과가 안정적인지",
+    description: "포즈 안정성",
     baseline_label: "StableVITON",
     method_label: "Enhanced",
     baseline_value: 0.782,
@@ -145,7 +145,7 @@ const modelMetrics: DemoMetric[] = [
   {
     key: "occlusion_handling",
     title: "Occlusion Handling",
-    description: "팔이나 몸통에 가려진 영역을 자연스럽게 처리하는지",
+    description: "가림 영역 처리",
     baseline_label: "StableVITON",
     method_label: "Enhanced",
     baseline_value: 0.641,
@@ -156,7 +156,7 @@ const modelMetrics: DemoMetric[] = [
   {
     key: "garment_preservation",
     title: "Garment Preservation",
-    description: "의류의 색상, 질감, 형태가 얼마나 유지되는지",
+    description: "의류 디테일 보존",
     baseline_label: "StableVITON",
     method_label: "Enhanced",
     baseline_value: 0.128,
@@ -167,7 +167,7 @@ const modelMetrics: DemoMetric[] = [
   {
     key: "boundary_quality",
     title: "Boundary Quality",
-    description: "옷과 신체의 경계가 자연스럽게 이어지는지",
+    description: "경계선 품질",
     baseline_label: "StableVITON",
     method_label: "Enhanced",
     baseline_value: 0.712,
@@ -178,7 +178,7 @@ const modelMetrics: DemoMetric[] = [
   {
     key: "failure_case_reduction",
     title: "Failure Case Reduction",
-    description: "깨짐, 왜곡, 어긋남 위험이 얼마나 줄었는지",
+    description: "실패 케이스 감소",
     baseline_label: "StableVITON",
     method_label: "Enhanced",
     baseline_value: 23.4,
