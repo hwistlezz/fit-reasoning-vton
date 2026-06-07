@@ -1,6 +1,6 @@
 # Fit-Reasoning VTON
 
-StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결합하기 위한 컴퓨터비전 캡스톤 프로젝트입니다.
+StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결합하기 위한 프로젝트입니다.
 
 이 프로젝트의 목표는 사람 이미지와 의류 이미지를 입력받아 가상 착장 결과를 만들고, 단순히 이미지만 보여주는 것이 아니라 fit label, confidence score, fit explanation, hotspot annotation까지 연결 가능한 Virtual Try-On 시스템을 만드는 것입니다.
 
