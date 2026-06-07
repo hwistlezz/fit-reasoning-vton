@@ -6,8 +6,6 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 
 ## 🎬 Demo
 
-Demo video will be added / submitted separately.
-
 현재 Git에는 실제 데모 영상, 결과 이미지, checkpoint, dataset을 포함하지 않습니다.
 
 데모 영상 링크: https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
