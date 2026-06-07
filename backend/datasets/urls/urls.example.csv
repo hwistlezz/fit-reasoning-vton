@@ -1,5 +1,0 @@
-id,url,category,source,note
-pre_001,https://example.com/person-image.jpg,preprocess_people,example,front upper body example only
-os_001,https://example.com/oversized-image.jpg,oversized_candidates,example,drop shoulder example only
-low_001,https://example.com/low-confidence-image.jpg,low_confidence,example,side view example only
-cloth_001,https://example.com/cloth-image.jpg,demo_cloth,example,front product image example only
