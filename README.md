@@ -232,6 +232,29 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 | shape_mismatch_keys | - | `[]` |
 | peak_vram_mb | 8887.85 | 8887.85 |
 
+### Experiment 5. 10k LoRA Adapter Save
+
+이 실험은 9995개 train layout에서 LoRA adapter를 저장하는 run입니다.  
+전체 StableVITON checkpoint를 저장하지 않고, `.lora_down`, `.lora_up`에 해당하는 LoRA parameter만 저장했습니다.
+
+생성된 `lora_adapter.pt`는 Git에 포함하지 않습니다.
+
+| Metric | Value |
+| --- | ---: |
+| status | success |
+| train_dataset_len | 9995 |
+| steps_completed | 9995 |
+| elapsed_sec | 10162.84 |
+| avg_step_time_sec | 1.017 |
+| first_loss | 0.435 |
+| final_loss | 0.263 |
+| loss_nan | false |
+| lora_adapter_saved | true |
+| lora_state_dict_key_count | 16 |
+| adapter_file_size_mb | 0.1236 |
+| checkpoint_created | false |
+| sample_created | false |
+| Git included | false |
 
 
 
