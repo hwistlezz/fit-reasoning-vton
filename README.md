@@ -23,6 +23,12 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
   
 상단의 `StableVITON`, `IDM VTON`, `CAT VITON` 탭은 StableVITON 중심 실험 결과를 확장하여 후속 baseline comparison을 진행하기 위한 비교 모델 후보를 나타냅니다.
 
+### 📊 Quantitative Fit Comparison Flow
+
+
+
+
+
 ## 💡 Motivation
 
 일반적인 Virtual Try-On(VTON)은 “옷이 입혀진 이미지”를 보여주는 데 집중합니다. 하지만 실제 사용자는 다음 질문을 함께 알고 싶어 합니다.
@@ -293,8 +299,6 @@ model.diffusion_model.input_blocks.*.transformer_blocks.0.attn*.to_q
 현재 README 기준으로 실제 10k LoRA 학습과 실험 로그가 정리된 모델은 StableVITON입니다. IDM-VTON과 CATVITON/CATVTON은 후속 baseline comparison 대상으로 남겨둡니다.
 
 ## 📊 Experiments / Results
-
-모든 결과는 training/smoke 관측값입니다. 아직 try-on image quality benchmark나 baseline vs LoRA inference comparison 결과가 아닙니다.
 
 ### Experiment 1. 10k Layout Validation
 
