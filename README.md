@@ -59,7 +59,8 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 - StableVITON `train.py` compatibility smoke 성공
 - 일부 attention Linear module 대상 LoRA runner 구현
 - 10k 9995-step 1 epoch-equivalent LoRA training loop 성공
-- LoRA adapter save/load 성공
+- LoRA adapter save/load smoke 성공
+- 10k 9995-step LoRA adapter save run 완료
 - Demo compare API와 frontend compare page 구조 준비
 - 10k adapter 기반 inference comparison
 - StableVITON baseline vs LoRA 실제 이미지 비교
