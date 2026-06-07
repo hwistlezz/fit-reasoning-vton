@@ -1,0 +1,86 @@
+{
+  "info": [
+    {
+      "description": "example k-deep-fashion data",
+      "copyright": "example",
+      "create_date": "2026.01.01.",
+      "id": "M001_P01_0001_1",
+      "model_id": "M001",
+      "cloth_id": "C0001",
+      "image": {
+        "path": "/원천데이터/제품 착용/상의/example_wearing.jpg",
+        "width": "3024",
+        "height": "4032",
+        "angle": "정면",
+        "pose": "P01"
+      },
+      "segmentation_class": [
+        "Background",
+        "Face",
+        "Left-arm",
+        "Right-arm",
+        "Top",
+        "T-shirt",
+        "Pants"
+      ],
+      "keypoint_class": [
+        "Nose",
+        "Left_shoulder",
+        "Right_shoulder",
+        "Left_elbow",
+        "Right_elbow",
+        "Left_wrist",
+        "Right_wrist",
+        "Left_hip",
+        "Right_hip"
+      ]
+    }
+  ],
+  "annotation": [
+    {
+      "segmentation": {
+        "16": [
+          [
+            100.0,
+            200.0,
+            180.0,
+            200.0,
+            180.0,
+            320.0,
+            100.0,
+            320.0
+          ]
+        ]
+      },
+      "keypoint": [
+        150.0,
+        100.0,
+        2,
+        120.0,
+        200.0,
+        2,
+        180.0,
+        200.0,
+        2,
+        110.0,
+        260.0,
+        2,
+        190.0,
+        260.0,
+        2,
+        105.0,
+        330.0,
+        2,
+        195.0,
+        330.0,
+        2,
+        125.0,
+        420.0,
+        2,
+        175.0,
+        420.0,
+        2
+      ]
+    }
+  ]
+}

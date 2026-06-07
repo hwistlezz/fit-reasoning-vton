@@ -2,7 +2,7 @@
 
 ## 역할
 
-CatVTON은 이번 프로젝트에서 main baseline이 아니라 optional comparison baseline이다. 메인 실행 대상은 IDM-VTON이며, CatVTON은 시간이 허용될 때 비교 실험 또는 smoke test에 사용한다.
+CatVTON은 이번 프로젝트에서 optional comparison baseline이다. 메인 실행 대상은 StableVITON이며, CatVTON은 시간이 허용될 때 비교 실험 또는 smoke test에 사용한다.
 
 CatVTON 원본 코드는 이 저장소에 직접 복사하지 않는다.
 

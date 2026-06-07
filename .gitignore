@@ -1,88 +1,158 @@
-# Python
+# Python / local tooling
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
+*.pyc
 .venv/
-venv/
-env/
-ENV/
-conda-env/
-
-# IDE / OS
+.env
+.env.*
 .idea/
-.vscode/
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Notebooks
-.ipynb_checkpoints/
+# PC2 raw / processed datasets
+backend/datasets/raw/**
+backend/datasets/processed/**
+backend/datasets/raw_test/**
+backend/datasets/fit_candidates/**
+backend/datasets/annotations/**
+backend/datasets/failure_cases/**
+backend/datasets/contact_sheets/**
 
-# Local environment files
-.env
-.env.*
-!.env.example
+# PC2 feature / evaluation outputs
+backend/datasets/features.csv
+backend/datasets/features_*.csv
+backend/datasets/*_features.csv
+backend/datasets/*_failures.csv
+backend/datasets/test_cases.csv
+backend/datasets/bad_pairs_manual.txt
+backend/datasets/pc2_vton_env_after_torch.txt
 
-# Datasets and local data
-data/*
-!data/.gitkeep
-datasets/
-external_datasets/
-viton-hd/
-VITON-HD/
-dresscode/
-DressCode/
+# PC2 / LoRA pilot datasets
+backend/datasets/lora_pilot_aihub_*/
+backend/datasets/lora_pilot_*/
+backend/datasets/*lora_pilot*/**
 
-# External VTON repository references
-external/
-third_party/
-CatVTON/
-catvton/
-CatVTON-main/
-catvton-main/
-IDM-VTON/
-idm-vton/
-IDM-VTON-main/
-idm-vton-main/
+# Dataset transfer / split archive files
+backend/datasets/*.zip
+backend/datasets/*.7z
+backend/datasets/*.7z.*
+backend/datasets/*.001
+backend/datasets/*.002
+backend/datasets/*.003
+backend/datasets/*.004
+backend/datasets/*.005
+backend/datasets/*.006
+backend/datasets/*.007
+backend/datasets/*.008
+backend/datasets/*.009
+backend/datasets/*.010
+backend/datasets/*.011
+backend/datasets/*.012
+backend/datasets/*.013
+backend/datasets/*.014
+backend/datasets/*.015
+backend/datasets/*.part
+backend/datasets/*.part*
+backend/datasets/*.txt
 
-# Model checkpoints and weights
-checkpoints/
-ckpts/
-weights/
-model_weights/
-*.ckpt
-*.pt
-*.pth
-*.safetensors
-*.onnx
-
-# Generated outputs
-outputs/*
-!outputs/.gitkeep
-results/
-generated/
-renders/
-overlays/
-
-# Logs and experiment artifacts
-logs/
-wandb/
-mlruns/
-tensorboard/
-*.log
-
-# Archives and large binary artifacts
+# AIHub archives / extracted large data
 *.zip
+*.zip.*
+*.7z
+*.7z.*
 *.tar
 *.tar.gz
 *.tgz
-*.7z
 *.rar
+
+# Large generated dataset artifacts
+backend/datasets/**/*.json
+backend/datasets/**/*.npy
+backend/datasets/**/*.npz
+backend/datasets/**/*.pkl
+backend/datasets/**/*.parquet
+backend/datasets/**/*.jpg
+backend/datasets/**/*.jpeg
+backend/datasets/**/*.png
+backend/datasets/**/*.webp
+backend/datasets/**/*.bmp
+
+# Keep placeholders only
+!backend/datasets/
+!backend/datasets/.gitkeep
+
+!backend/datasets/raw/
+!backend/datasets/raw/.gitkeep
+
+!backend/datasets/processed/
+!backend/datasets/processed/.gitkeep
+
+!backend/datasets/raw_test/
+!backend/datasets/raw_test/.gitkeep
+
+!backend/datasets/fit_candidates/
+!backend/datasets/fit_candidates/.gitkeep
+
+!backend/datasets/annotations/
+!backend/datasets/annotations/.gitkeep
+
+!backend/datasets/failure_cases/
+!backend/datasets/failure_cases/.gitkeep
+
+!backend/datasets/contact_sheets/
+!backend/datasets/contact_sheets/.gitkeep
+
+# Backend generated outputs / logs
+backend/training/outputs/**
+backend/outputs/**
+backend/logs/**
+backend/demo/assets/**
+!backend/outputs/
+!backend/outputs/.gitkeep
+
+!backend/logs/
+!backend/logs/.gitkeep
+
+# Generated images / checkpoints
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.bmp
+*.ckpt
+*.pth
+*.pt
+*.safetensors
+
+# Root generated outputs / external data
+DATA/**
+samples_smoke/**
+stableviton_raw/**
+
+# PC2/PC3 dataset transfer patches
+backend/datasets/incoming_*/**
+backend/datasets/send_*/**
+backend/datasets/*artifact_patch*/**
+send_*/**
+incoming_*/**
+*_artifact_patch*/**
+*_artifact_patch_v*.zip
+*_artifact_patch_v*.zip.part*
+*.zip.part*
+*.part*
+checksums_sha256.json
+*_checksums_sha256.json
+
+# StableVITON generated layout / training outputs
+backend/datasets/stableviton_*/**
+backend/datasets/*stableviton*layout*/**
+backend/training/outputs/**
+backend/training/logs/**
+backend/training/runs/**
+backend/training/checkpoints/**
+
+# DensePose / model artifacts
+models/densepose/**
+models/**/*.pkl
+external/detectron2/**

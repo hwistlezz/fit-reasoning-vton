@@ -1,17 +1,24 @@
 external_repos:
+  stableviton: "../StableVITON"
   idm_vton: "../IDM-VTON"
   catvton: "../CatVTON"
 
 data:
   samples: "./data/samples"
 
+backend:
+  outputs: "./backend/outputs"
+  logs: "./backend/logs"
+
 outputs:
   root: "./outputs"
+  stableviton: "./outputs/stableviton"
   idm_vton: "./outputs/idm_vton"
   catvton: "./outputs/catvton"
   analysis: "./outputs/analysis"
 
 checkpoints:
+  stableviton: "../checkpoints/StableVITON"
   idm_vton: "../checkpoints/IDM-VTON"
   catvton: "../checkpoints/CatVTON"
 

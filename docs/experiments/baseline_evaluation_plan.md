@@ -2,15 +2,15 @@
 
 ## 목적
 
-IDM-VTON을 main baseline으로 사용해 생성한 virtual try-on 결과를 확인하고, Fit-aware Reasoning Layer가 분석할 수 있는 신뢰도 평가 항목을 정리한다.
+StableVITON을 MVP main VTON backbone으로 사용해 생성한 virtual try-on 결과를 확인하고, Fit-aware Reasoning Layer가 분석할 수 있는 신뢰도 평가 항목을 정리한다.
 
-CatVTON은 optional comparison baseline으로 유지한다.
+IDM-VTON과 CatVTON은 시간이 남을 경우에만 진행하는 optional VTON comparison으로 유지한다.
 
 ## 입력과 출력
 
 - 입력: person image, garment image
-- main baseline 출력: IDM-VTON generated image
-- optional comparison 출력: CatVTON generated image
+- main output: StableVITON generated image
+- optional comparison output: IDM-VTON 또는 CatVTON generated image
 
 ## 평가 관점
 

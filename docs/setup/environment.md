@@ -2,15 +2,15 @@
 
 ## 목적
 
-이 문서는 Fit-Confidence Virtual Try-On 프로젝트의 기본 환경 원칙을 정리한다. 현재 단계에서는 proposal과 외부 baseline 준비가 목적이며, 불필요한 의존성을 본 저장소에 추가하지 않는다.
+이 문서는 Fit-aware Virtual Try-On Web Prototype의 기본 환경 원칙을 정리한다. 현재 단계에서는 StableVITON 중심 MVP와 외부 VTON optional comparison 준비가 목적이며, 불필요한 의존성을 본 저장소에 추가하지 않는다.
 
 ## 기본 요구사항
 
 - Python 3.10 이상 권장
 - Git
 - NVIDIA GPU 환경 권장
-- 메인 baseline인 IDM-VTON 실행 환경은 외부 저장소에서 별도로 구성
-- CatVTON은 optional comparison baseline으로 외부 저장소에서 별도로 구성
+- MVP main VTON backbone인 StableVITON 실행 환경은 PC1 외부 저장소에서 별도로 구성
+- IDM-VTON과 CatVTON은 시간이 남을 경우에만 진행하는 optional VTON comparison 환경으로 외부 저장소에서 별도로 구성
 
 ## 로컬 저장소 원칙
 
@@ -37,17 +37,19 @@
 ```text
 workspace/
   fit-reasoning-vton/
+  StableVITON/
   IDM-VTON/
   CatVTON/
   datasets/
     VITON-HD/
     DressCode/
   checkpoints/
+    StableVITON/
     IDM-VTON/
     CatVTON/
 ```
 
-이 방식은 본 프로젝트의 웹/분석 코드와 외부 VTON baseline 코드를 분리하여 유지보수성을 높인다.
+이 방식은 본 프로젝트의 웹/분석 코드와 외부 VTON 모델 코드를 분리하여 유지보수성을 높인다.
 
 ## GPU 확인
 
@@ -59,7 +61,8 @@ python scripts/check_gpu.py
 
 ## 향후 추가 예정
 
-- IDM-VTON 실행 환경 기록
+- StableVITON 실행 환경 기록
+- optional VTON comparison 실행 환경 기록
 - 샘플 이미지 smoke test 기록
 - 웹 데모 실행 방법
 - Fit confidence score 설정 파일

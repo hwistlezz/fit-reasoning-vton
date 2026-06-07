@@ -1,0 +1,40 @@
+{
+  "case_id": "example_case_001",
+  "source": "example",
+  "confidence": {
+    "score": 72,
+    "level": "medium",
+    "warnings": [
+      "예시 데이터입니다. 실제 AIHub 계산 결과가 아닙니다."
+    ]
+  },
+  "fit": {
+    "label": "regular",
+    "scores": {
+      "shoulder_ratio": 1.04,
+      "torso_width_ratio": 1.08,
+      "sleeve_length_ratio": 0.96,
+      "garment_length_ratio": 1.02
+    },
+    "explanations": [
+      "어깨선과 몸통 폭이 비교적 자연스럽게 정렬된 예시입니다.",
+      "소매 길이는 약간 짧게 보일 수 있으나 전체 fit 판단에는 큰 문제가 없는 예시입니다."
+    ]
+  },
+  "annotations": [
+    {
+      "part": "shoulder",
+      "x": 50,
+      "y": 28,
+      "severity": "low",
+      "message": "어깨선 정렬 상태가 양호한 예시입니다."
+    },
+    {
+      "part": "sleeve",
+      "x": 72,
+      "y": 48,
+      "severity": "medium",
+      "message": "소매 길이 확인이 필요한 예시입니다."
+    }
+  ]
+}
