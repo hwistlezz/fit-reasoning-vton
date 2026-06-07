@@ -32,7 +32,7 @@ StableVITON 기반 virtual try-on 결과에 fit reasoning과 confidence를 결�
 - 어깨, 소매, 몸통, 기장 중 어느 부분이 실패했거나 위험한가?
 - 입력 pose, parsing, dense pose 같은 artifact가 결과 안정성에 어떤 영향을 주는가?
 
-Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, adapter save/load smo까지 검증했습니다.
+Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하는 방향으로 설계했습니다. 이번 제출 범위에서는 StableVITON 호환 dataset layout, artifact readiness, LoRA training pipeline, LoRA adapter save/load smoke, 10k adapter save run까지 검증했습니다.
 
 ## 🎯 Problem Definition
 
@@ -231,6 +231,8 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 | unexpected_keys | - | `[]` |
 | shape_mismatch_keys | - | `[]` |
 | peak_vram_mb | 8887.85 | 8887.85 |
+
+
 
 
 ## 🛠️ Troubleshooting / Lessons Learned
