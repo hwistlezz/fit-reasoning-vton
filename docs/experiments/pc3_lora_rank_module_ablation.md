@@ -4,8 +4,6 @@
 
 이번 작업은 StableVITON saved LoRA adapter의 고도화 가능성을 보기 위해 LoRA rank와 target module 수를 바꾼 ablation experiment를 실행한 기록이다.
 
-이번 작업은 제출 이후 고도화 실험이며, dataset/output/checkpoint/adapter/generated image/log/summary json은 Git에 포함하지 않는다.
-
 ## 2. 선행 상태
 
 - PR #107: StableVITON LoRA 10k 9995-step 1 epoch-equivalent training 성공
