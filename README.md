@@ -538,6 +538,19 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 ### Experiment 6. Demo Pair Quality Score Comparison
 
 이 실험은 동일한 demo pair에 대해 StableVITON baseline과 StableVITON + LoRA 결과를 비교한 UI-level quality score입니다.
+
+Saved LoRA adapter inference smoke도 같은 pair 기준으로 실행했습니다. Generated result images are stored locally under `backend/training/outputs/**` and are not committed to Git.
+
+| Inference Item | StableVITON Baseline | StableVITON + Saved LoRA |
+| --- | ---: | ---: |
+| pair_id | `EP00000011` | `EP00000011` |
+| status | success | success |
+| denoise_steps | 50 | 50 |
+| output_count | 1 | 1 |
+| elapsed_sec | 22.5637 | 18.5134 |
+| peak_vram_mb | 7839.65 | 7857.1 |
+| lora_adapter_loaded | false | true |
+| lora_adapter_loaded_key_count | 0 | 16 |
  
 > LoRA가 일반적으로 모든 입력에서 성능을 개선한다고 결론 내리기 위해서는 추가적인 test set 기반 정량 평가가 필요합니다.
 
