@@ -82,10 +82,6 @@ Fit-Reasoning VTON의 서비스 목표는 다음과 같습니다.
 
 데모 영상 링크: https://drive.google.com/drive/u/0/folders/1ohD0kGGElCdoHZPtS9bWI1p0Qaeqj_XA
 
-<!-- TODO: Add demo flow screenshot after final video export. -->
-<!-- Suggested placeholder path: assets/readme/demo_flow.png -->
-<!-- Suggested result comparison path: assets/readme/model_compare_placeholder.png -->
-
 ## 🖥️ Demo UI Preview
 
 <img width="1196" height="756" alt="image" src="https://github.com/user-attachments/assets/221bf1af-b2bc-484d-8704-6bafc3d219e1" />
@@ -653,7 +649,7 @@ StableVITON-compatible layout을 구성할 때는 단순히 파일을 복사하�
 - External checkout: `D:\GitHub\StableVITON`
 - Repo-side runner: `backend/training/scripts/run_stableviton_lora_tiny_smoke.py`
 
-StableVITON source code, pretrained weights, generated images, and dataset files are not committed to this repository.
+StableVITON source code, pretrained weights, generated images, and dataset 파일들은 이 저장소에 커밋하지 않습니다.
 
 ### Why StableVITON?
 
@@ -722,7 +718,7 @@ model.diffusion_model.input_blocks.*.transformer_blocks.0.attn*.to_q
 
 ### Experiment 3. LoRA 9995-Step 1 Epoch-Equivalent Training
 
-This run verified the training loop. It did not save a LoRA adapter or generated image.
+이 실행은 학습 루프가 정상적으로 동작하는지 검증하기 위한 실험입니다. 이 단계에서는 LoRA adapter나 생성 이미지를 저장하지 않았습니다.
 
 | Metric | Value |
 | --- | ---: |
@@ -739,7 +735,7 @@ This run verified the training loop. It did not save a LoRA adapter or generated
 
 ### Experiment 4. LoRA Adapter Save/Load Smoke
 
-This run verified adapter persistence using 1-step smoke. It is not a quality comparison.
+이 실행은 1-step 간단 검증을 통해 LoRA adapter가 저장되고 다시 불러와지는지 확인한 실험입니다. 착장 품질 비교 실험은 아닙니다.
 
 | Metric | Save | Load |
 | --- | ---: | ---: |
@@ -784,7 +780,7 @@ This run verified adapter persistence using 1-step smoke. It is not a quality co
 
 이 실험은 동일한 demo pair에 대해 StableVITON baseline과 StableVITON + LoRA 결과를 비교한 UI-level quality score입니다.
 
-Saved LoRA adapter inference smoke도 같은 pair 기준으로 실행했습니다. Generated result images are stored locally under `backend/training/outputs/**` and are not committed to Git.
+Saved LoRA adapter inference smoke도 같은 pair 기준으로 실행했습니다. 생성된 결과 이미지는 `backend/training/outputs/**` 하위 로컬 경로에만 저장되며, 저장소에는 포함하지 않습니다.
 
 | Inference Item | StableVITON Baseline | StableVITON + Saved LoRA |
 | --- | ---: | ---: |
@@ -850,7 +846,8 @@ Demo pair comparison에서는 단순히 confidence score만 비교하지 않고,
 
 ### Experiment 7. LoRA Rank / Module Ablation
 
-제출 이후 고도화 실험으로 LoRA rank와 target module 수를 조정한 ablation을 진행했습니다. Generated adapters, logs, summaries, contact sheet images are stored locally under `backend/training/outputs/**` and are not committed to Git.
+고도화 실험으로 LoRA rank와 target module 수를 조정한 ablation을 진행했습니다.
+학습 과정에서 생성된 LoRA 어댑터, 로그, 요약 파일, contact sheet 이미지는 `backend/training/outputs/**` 하위 로컬 경로에만 저장되며, 저장소에는 포함하지 않습니다.
 
 | Metric | rank4-module8 | rank8-module8 | rank8-module16 |
 | --- | ---: | ---: | ---: |
