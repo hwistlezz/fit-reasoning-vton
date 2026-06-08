@@ -848,6 +848,22 @@ Demo pair comparison에서는 단순히 confidence score만 비교하지 않고,
 
 이 기준들은 모델의 절대 성능을 평가하기 위한 공식 metric은 아니지만, 사용자가 실제 결과 이미지를 볼 때 어느 부분을 확인해야 하는지 설명하기 위한 기준으로 사용했습니다.
 
+### Experiment 7. LoRA Rank / Module Ablation
+
+제출 이후 고도화 실험으로 LoRA rank와 target module 수를 조정한 ablation을 진행했습니다. Generated adapters, logs, summaries, contact sheet images are stored locally under `backend/training/outputs/**` and are not committed to Git.
+
+| Metric | rank4-module8 | rank8-module8 | rank8-module16 |
+| --- | ---: | ---: | ---: |
+| steps_completed | 9995 | 9995 | 9995 |
+| trainable_params_after_lora | 30720 | 61440 | 194560 |
+| adapter_file_size_mb | 0.1236 | 0.2408 | 0.7546 |
+| final_loss | 0.3207787275314331 | 0.2951800227165222 | 0.004082299303263426 |
+| loss_nan | false | false | false |
+| inference_pairs | 10 | 10 | 10 |
+| inference_output_count | 10 | 10 | 10 |
+
+Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 색 번짐과 과한 texture artifact가 더 눈에 띄었습니다. 현재 관찰 기준으로는 rank8-module8이 더 안정적인 후속 후보입니다.
+
 
 ## 🛠️ Troubleshooting / Lessons Learned
 
@@ -961,6 +977,8 @@ Demo pair comparison에서는 단순히 confidence score만 비교하지 않고,
 - 9995-step adapter save result
 - Saved 10k adapter based inference
 - Baseline StableVITON vs LoRA generated image comparison
+- LoRA rank/module ablation training
+- 10-pair baseline/rank4/rank8 inference comparison
 - Final demo video in README
 
 ## 🚀 실행 방법
