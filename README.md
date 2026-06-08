@@ -555,6 +555,39 @@ docs(#111): README 고도화
 
 Dataset은 용량과 라이선스 문제로 Git에 포함하지 않습니다.
 
+### Why AIHub Dataset?
+
+이 프로젝트에서는 임의로 웹에서 수집한 쇼핑몰 이미지나 개인 착용 사진 대신, AIHub 기반 의류/포즈 데이터를 사용했습니다.
+
+Virtual Try-On 실험에서는 단순히 이미지 수가 많은 것보다, 사람 이미지와 의류 이미지가 일정한 기준으로 정리되어 있고, pose, mask, parsing, DensePose-style artifact로 확장할 수 있는지가 중요합니다. AIHub 데이터는 이러한 전처리 흐름을 구성하기에 적합하다고 판단했습니다.
+
+| 선택 이유 | 설명 |
+| --- | --- |
+| 데이터 출처 명확성 | 웹 크롤링 이미지보다 출처와 사용 범위를 명확히 관리할 수 있음 |
+| 의류/사람 이미지 기반 실험에 적합 | person image와 cloth image를 사용하는 VTON 실험 구조와 잘 맞음 |
+| 10k scale 실험 가능 | tiny smoke 수준을 넘어 9995개 train layout 기준의 실제 학습 실험까지 확장 가능 |
+| artifact 확장 가능 | agnostic image, mask, parsing, pose, DensePose-style artifact를 함께 구성할 수 있음 |
+| StableVITON layout 변환 가능 | StableVITON이 요구하는 VITON-HD style folder structure로 재구성 가능 |
+| 재현 가능한 실험 관리 | manifest, pair file, folder count, strict artifact smoke로 데이터 준비 상태를 검증하기 좋음 |
+| Git 관리 부담 감소 | raw dataset은 local workspace에 두고, repository에는 코드와 실험 문서만 기록하는 방식과 잘 맞음 |
+
+AIHub 데이터를 그대로 사용하는 것만으로 StableVITON 학습이 바로 가능한 것은 아니었습니다.  
+원본 데이터는 StableVITON이 기대하는 폴더 구조, 파일명 규칙, 이미지 크기, mask 형식과 차이가 있었기 때문에 별도의 layout 변환과 artifact 검증 과정이 필요했습니다.
+
+이 프로젝트에서는 AIHub 기반 데이터를 다음 흐름으로 정리했습니다.
+
+```mermaid
+flowchart LR
+  A[AIHub Raw Data] --> B[PC2 Preprocessing]
+  B --> C[Artifact Generation / Organization]
+  C --> D[PC3 Dataset Smoke Test]
+  D --> E[StableVITON-compatible 10k Layout]
+  E --> F[LoRA Training / Adapter Save]
+```
+
+결과적으로 AIHub 데이터셋을 선택한 이유는 단순히 “사용 가능한 데이터가 있었기 때문”이 아니라,  
+**Virtual Try-On 학습에 필요한 사람-의류 pair, artifact 구성, 10k scale 실험, 재현 가능한 검증 흐름을 만들기 적합했기 때문**입니다.
+
 ### StableVITON Layout Summary
 
 | Item | Value |
