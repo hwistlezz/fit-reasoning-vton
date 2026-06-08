@@ -214,7 +214,7 @@ backend/training/outputs/stableviton_lora_10k_adapter_save/lora_adapter.pt
 - `scripts/validate_demo_assets.py --strict` 실행
 - Artifact Compare / Model Compare API와 frontend에 연결
 
-이번 문서의 9995-step adapter save 결과는 adapter 파일 생성과 load 가능한 학습 artifact 확보를 의미한다. 실제 착장 품질 개선 여부는 아직 baseline vs LoRA inference comparison으로 검증해야 한다.
+이번 문서의 9995-step adapter save 결과는 adapter 파일 생성과 load 가능한 학습 artifact 확보를 의미한다.
 
 ## 8. Git safety
 
