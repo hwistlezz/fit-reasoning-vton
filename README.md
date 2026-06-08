@@ -210,7 +210,7 @@ Fit-Reasoning VTON은 VTON 결과 이미지에 fit reasoning layer를 연결하�
 - Demo compare API와 frontend compare page 구조 준비
 - 10k adapter 기반 inference comparison
 - StableVITON baseline vs LoRA 실제 이미지 비교
-- LoRA가 착장 품질을 개선했다는 정량/정성 결론
+- demo pair 기준 StableVITON baseline 대비 LoRA 결과의 정성/정량 보조 지표 개선 확인
 - 최종 demo video 업로드
 
 
@@ -237,7 +237,7 @@ flowchart LR
   D --> E[StableVITON Baseline]
   D --> F[LoRA Training]
   F --> G[Adapter Save / Load]
-  G --> H[Future Inference Comparison]
+  G --> H[Inference Comparison]
   H --> I[Fit Reasoning UI]
 ```  
 
@@ -250,7 +250,7 @@ flowchart LR
 | 팀원 | 담당 영역 | 담당 PC / 환경 | 주요 작업 |
 | --- | --- | --- | --- |
 | 김성휘 | Backend, PC 1, PC 3, LoRA training | PC 1, PC 3 | FastAPI backend 구조 설계, Try-On job API, StableVITON wrapper, PC 3 dataset 검증, StableVITON-compatible layout 구성, LoRA runner 구현, 10k 9995-step training, LoRA adapter save/load 검증, 실험 문서화 |
-| 정경재 | Frontend, PC 2, Data preprocessing | Frontend local dev, PC 2 preprocessing environment | Next.js demo UI, model/artifact comparison page, 업로드/결과 비교 화면 구성, AIHub 기반 preprocessing artifact 생성, PC 2 dataset 정리, PC 3 전달용 dataset archive 준비 |
+| 정경재 | Frontend, PC 2, Data preprocessing, Demo pipeline planning | Frontend local dev, PC 2 preprocessing environment | Next.js demo UI, model/artifact comparison page, 업로드/결과 비교 화면 구성, AIHub 기반 preprocessing artifact 생성, PC 2 dataset 정리, PC 3 전달용 dataset archive 준비, 실시간 업로드형 데모 플로우 기획, frontend-backend 응답 schema 및 전체 demo pipeline 구조 정리 |
 
 ### PC별 작업 흐름
 
@@ -289,6 +289,9 @@ PC 2는 AIHub dataset 기반 preprocessing과 frontend UI 구현을 담당했습
 - HTTP server를 통해 PC 3로 dataset 전달
 - Next.js 기반 demo UI 구현
 - person image, cloth image, target worn, StableVITON, StableVITON LoRA 결과를 비교할 수 있는 model comparison page 구성
+- 실시간 업로드형 demo flow 기획
+- frontend에서 사용할 backend response schema, result card 구조, detailed analysis tab 구성 방향 정리
+- person / cloth / worn 입력과 Target Worn / StableVITON / StableVITON LoRA 출력 비교 구조 설계
 
 ### PC 3: Dataset Validation / LoRA Training
 
@@ -750,7 +753,7 @@ npm run dev
 
 - Next.js 기반 demo UI
 - `/model-compare` route
-- artifact/model comparison component
+- `/model-compare` 중심의 StableVITON baseline vs StableVITON LoRA comparison UI
 - confidence badge, fit explanation, detailed analysis tab, hotspot overlay 구조 준비
 - 실제 생성 비교 이미지는 아직 Git에 포함하지 않음
 - 
@@ -821,7 +824,7 @@ Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하�
 
 ## ⚠️ 한계점
 
-- 현재 LoRA 실험만으로 실제 착장 품질이 개선됐다고 결론 내릴 수는 없습니다.
+- 현재 결과는 demo pair 중심의 비교이므로, 더 다양한 pose, category, occlusion 조건에서의 추가 평가는 향후 작업으로 남겨둡니다.
 - Fit confidence, fit explanation, hotspot annotation은 시스템 목표와 UI/API 방향으로 준비되어 있지만, 최종 모델 기반 reasoning output과의 통합은 추가 작업이 필요합니다.
 - Dataset과 output artifact는 용량 및 라이선스 문제로 Git에 포함하지 않습니다.
 - Demo pair quality score는 특정 입력 쌍에 대한 UI-level 비교 결과이며, 전체 test set에 대한 정량 benchmark는 아직 수행하지 않았습니다.
