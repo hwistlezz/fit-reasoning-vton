@@ -316,6 +316,112 @@ flowchart LR
   H --> I[Fit Reasoning UI]
 ```  
 
+## 🔄 Image-to-Result Pipeline
+
+이 프로젝트에서 중요한 부분은 단순히 두 이미지를 입력받아 바로 합성하는 것이 아니라, 사람 이미지와 의류 이미지를 StableVITON이 사용할 수 있는 형태로 정리하고, 생성된 결과를 다시 사용자가 이해할 수 있는 정보로 바꾸는 과정입니다.
+
+전체 흐름은 다음과 같습니다.
+
+```mermaid
+flowchart LR
+  A[Person Image] --> B[Preprocessing]
+  C[Cloth Image] --> B
+  B --> D[StableVITON-compatible Artifacts]
+  D --> E[Baseline Inference]
+  D --> F[LoRA-enhanced Inference]
+  E --> G[Result Comparison]
+  F --> G
+  G --> H[Fit / Confidence / Hotspot UI]
+```
+
+### 1. 입력 이미지 정리
+
+Virtual Try-On에서는 사람 이미지와 의류 이미지만 준비한다고 바로 학습이나 추론이 가능한 것은 아닙니다.  
+모델이 사람의 자세, 상체 영역, 기존 의류 영역, 새로 입힐 의류 영역을 구분할 수 있도록 여러 보조 파일을 같은 pair 기준으로 맞춰야 합니다.
+
+이 프로젝트에서는 다음 요소들을 하나의 sample 단위로 정리했습니다.
+
+- 사람 원본 이미지
+- 의류 상품 이미지
+- 정답 착용 이미지 후보
+- 기존 의류 영역을 제거한 사람 이미지
+- 상체 의류 영역 mask
+- 의류 mask
+- 사람 부위 parsing 결과
+- pose keypoint JSON
+- DensePose-style artifact
+- fit annotation JSON
+
+이 과정의 목적은 “이미지를 많이 모으는 것”이 아니라, StableVITON이 기대하는 입력 구조에 맞게 파일명, 해상도, 폴더 구조, pair 관계를 일관되게 맞추는 것입니다.
+
+### 2. Artifact 기반 조건 정리
+
+StableVITON 계열 모델은 입력 이미지를 단순한 RGB 이미지로만 보지 않습니다.  
+사람 이미지에서 어떤 영역을 유지해야 하는지, 어떤 영역을 새 옷으로 바꿔야 하는지, 팔과 몸통이 어디에 있는지 같은 정보를 함께 사용합니다.
+
+따라서 이 프로젝트에서는 artifact를 다음과 같은 역할로 사용했습니다.
+
+| Artifact | 사용 목적 |
+| --- | --- |
+| `agnostic-v3.2/` | 기존 상의 정보를 줄이고, 사람의 체형과 자세 정보는 유지 |
+| `agnostic-mask/` | 새 의류가 적용될 상체 영역 지정 |
+| `cloth-mask/` | 입력 의류에서 실제 옷 영역만 분리 |
+| `image-parse/` | 팔, 몸통, 상의 등 사람 부위 구분 |
+| `openpose-json/` | 어깨, 팔꿈치, 손목 등 주요 관절 위치 확인 |
+| `image-densepose/` | 사람의 표면 구조를 더 안정적으로 참고하기 위한 조건 정보 |
+| `gt_cloth_warped_mask/` | 의류 정렬 및 warping 관련 학습 보조 정보 |
+
+이 artifact들은 최종 사용자에게 직접 보이는 데이터라기보다는, 모델이 착장 위치와 경계를 더 안정적으로 판단하도록 돕는 내부 조건 정보입니다.
+
+### 3. 결과 비교 기준
+
+StableVITON baseline과 StableVITON + LoRA 결과는 단순히 “더 좋아 보이는지”만으로 비교하기 어렵습니다.  
+그래서 데모 UI에서는 결과 이미지를 몇 가지 관점으로 나누어 확인하도록 구성했습니다.
+
+| 비교 항목 | 확인하려는 내용 |
+| --- | --- |
+| Shoulder Alignment | 생성된 의류 어깨선이 사람의 어깨 위치와 자연스럽게 맞는지 |
+| Graphic Preservation | 입력 의류의 전면 그래픽이 결과 이미지에서도 중심과 형태를 유지하는지 |
+| Sleeve Boundary | 팔 영역과 소매 경계가 섞이지 않고 분리되는지 |
+| Hem Stability | 상의 밑단이 몸통 하단에서 어색하게 흐트러지지 않는지 |
+| Color Consistency | 입력 의류의 색감이 결과 이미지에서 크게 변하지 않는지 |
+| Pose Robustness | 비정면 자세나 팔 위치 변화에도 결과가 안정적인지 |
+
+이 기준들은 모델의 일반적인 성능을 확정적으로 주장하기 위한 지표가 아니라, 데모 pair에서 baseline과 LoRA 결과의 차이를 사용자가 이해하기 쉽게 보여주기 위한 보조 기준입니다.
+
+### 4. LoRA 적용 방향
+
+이번 프로젝트에서는 StableVITON 전체 모델을 다시 학습하지 않고, 일부 attention Linear module에만 LoRA adapter를 삽입했습니다.
+
+전체 모델을 fine-tuning하면 parameter 수와 VRAM 부담이 크고, 제한된 시간 안에 여러 실험을 반복하기 어렵습니다.  
+반면 LoRA는 기존 모델의 대부분 parameter를 고정한 상태에서 작은 adapter parameter만 학습하므로, 실험 비용을 줄이면서도 특정 데이터셋에 대한 적응 가능성을 확인할 수 있습니다.
+
+이번 실험에서는 다음 방향을 유지했습니다.
+
+- StableVITON 외부 repository는 직접 수정하지 않음
+- 우리 repository의 runner에서 StableVITON을 import하여 실행
+- 전체 checkpoint가 아니라 LoRA adapter parameter만 저장
+- dataset, output, checkpoint, generated image는 Git에 포함하지 않음
+- 1-step smoke → 100-step benchmark → 9995-step run 순서로 안정성 확인
+
+이를 통해 단순 실행 성공이 아니라, 학습 가능성, adapter 저장/로드, inference 비교까지 이어지는 최소 실험 흐름을 구성했습니다.
+
+### 5. 이미지 정렬 관점에서의 주요 처리 포인트
+
+Virtual Try-On 결과의 품질은 모델 구조뿐만 아니라 입력 이미지와 artifact가 얼마나 잘 정렬되어 있는지에도 크게 영향을 받습니다.  
+특히 사람 이미지와 의류 이미지가 서로 다른 촬영 조건, 자세, 비율을 가지기 때문에 다음과 같은 정렬 문제가 발생할 수 있습니다.
+
+| 처리 포인트 | 설명 |
+| --- | --- |
+| Person-Cloth Scale | 사람 상체 크기와 의류 이미지의 크기 차이를 맞추는 문제 |
+| Body Center Alignment | 사람의 몸통 중심과 의류의 중심이 어긋나지 않도록 하는 문제 |
+| Shoulder Line Alignment | 사람 어깨 위치와 의류 어깨선이 자연스럽게 대응되는지 확인 |
+| Sleeve-Arm Boundary | 팔 영역과 소매 영역이 섞이지 않도록 경계를 유지 |
+| Texture Preservation | 의류의 그래픽, 로고, 패턴이 생성 결과에서 과하게 변형되지 않도록 유지 |
+| Occlusion Handling | 팔, 가방, 손에 든 물체처럼 상체를 가리는 요소가 있을 때 결과 안정성 확인 |
+
+이 프로젝트에서는 이러한 문제를 직접 수식으로 해결하기보다는, pose, parsing, mask, DensePose-style artifact를 StableVITON 입력 구조에 맞게 정리하고, LoRA 학습 결과를 같은 pair 기준으로 비교하는 방식으로 접근했습니다.
+
    
 ## 👥 팀 역할 및 협업 방식
 
@@ -461,21 +567,40 @@ Dataset은 용량과 라이선스 문제로 Git에 포함하지 않습니다.
 
 ### Artifact Folders
 
-StableVITON-compatible layout에서 검증한 artifact는 다음과 같습니다.
+StableVITON-compatible layout에서 사용한 주요 artifact는 다음과 같습니다.
 
 | Artifact | Role |
 | --- | --- |
-| `image/` | person/model image |
-| `cloth/` | product clothing image |
-| `worn/` | target worn image candidate |
-| `fit/` | fit feature / annotation JSON |
-| `agnostic-v3.2/` | person agnostic image |
-| `agnostic-mask/` | agnostic mask |
-| `openpose-json/` | pose keypoint JSON |
-| `image-parse/` | human parsing artifact |
-| `cloth-mask/` | clothing mask |
-| `image-densepose/` | DensePose-style artifact |
-| `gt_cloth_warped_mask/` | StableVITON ATV-loss related mask candidate |
+| `image/` | 착장 대상이 되는 사람 이미지 |
+| `cloth/` | 새로 입힐 의류 이미지 |
+| `worn/` | 비교 기준으로 사용할 수 있는 실제 착용 이미지 후보 |
+| `fit/` | fit feature 또는 annotation JSON |
+| `agnostic-v3.2/` | 기존 상의 정보를 줄인 사람 이미지 |
+| `agnostic-mask/` | 새 의류가 들어갈 상체 영역 mask |
+| `openpose-json/` | 사람의 주요 관절 위치 정보 |
+| `image-parse/` | 사람 영역을 부위별로 나눈 parsing 결과 |
+| `cloth-mask/` | 입력 의류 영역 mask |
+| `image-densepose/` | 사람의 자세와 표면 구조를 보조적으로 표현한 artifact |
+| `gt_cloth_warped_mask/` | 의류 정렬 및 warping 관련 학습 보조 mask |
+
+이 구조를 맞추는 과정에서 가장 중요했던 점은 각 artifact가 같은 `pair_id` 기준으로 정확히 대응되어야 한다는 점입니다.  
+하나의 sample에서 이미지, mask, parsing, pose 정보가 서로 맞지 않으면 학습은 실행되더라도 결과 비교나 품질 해석이 어려워질 수 있습니다.
+
+### Preprocessing Notes
+
+StableVITON-compatible layout을 구성할 때는 단순히 파일을 복사하는 것보다, 이미지 계열과 mask 계열을 다르게 처리하는 것이 중요했습니다.
+
+| 항목 | 처리 기준 |
+| --- | --- |
+| RGB image | 사람 이미지, 의류 이미지, agnostic image, DensePose-style image는 모델 입력 크기에 맞게 resize |
+| Mask image | agnostic mask, cloth mask, warped mask는 label boundary가 깨지지 않도록 nearest-neighbor 방식으로 resize |
+| JSON artifact | pose keypoint, fit annotation은 같은 `pair_id` 기준으로 연결 |
+| Pair file | StableVITON이 읽을 수 있도록 person-cloth pair 관계를 명시 |
+| Source dataset | 원본 데이터는 수정하지 않고, 학습용 output layout만 별도로 생성 |
+
+특히 mask 계열 이미지는 일반 이미지처럼 보간하면 경계가 흐려지거나 label 값이 섞일 수 있습니다.  
+따라서 RGB 이미지와 mask 이미지를 구분해서 처리했고, 이 점을 strict artifact smoke와 layout validation으로 확인했습니다.
+
 
 ### Strict Artifact Smoke
 
@@ -496,6 +621,18 @@ StableVITON-compatible layout에서 검증한 artifact는 다음과 같습니다
 - Repo-side runner: `backend/training/scripts/run_stableviton_lora_tiny_smoke.py`
 
 StableVITON source code, pretrained weights, generated images, and dataset files are not committed to this repository.
+
+### Why StableVITON?
+
+StableVITON은 사람 이미지와 의류 이미지를 함께 사용해 가상 착장 결과를 생성하는 diffusion 기반 VTON 모델입니다.  
+이 프로젝트에서는 StableVITON을 직접 새로 구현하기보다, 공개된 StableVITON 구조를 기반으로 dataset layout 구성, LoRA 삽입, adapter 저장/로드, inference comparison 흐름을 검증하는 데 집중했습니다.
+
+선택 이유는 다음과 같습니다.
+
+- 사람 이미지와 의류 이미지를 함께 사용하는 VTON 구조를 갖고 있음
+- pose, mask, parsing, DensePose-style artifact를 활용하는 실험 흐름과 잘 맞음
+- baseline 결과와 LoRA 적용 결과를 같은 입력 pair 기준으로 비교하기 좋음
+- 전체 모델을 수정하지 않고도 외부 repository 기반 runner로 실험을 확장할 수 있음
 
 ### LoRA Strategy
 
@@ -647,6 +784,36 @@ StableVITON + LoRA 결과는 demo pair 기준으로 모든 세부 항목에서 b
 이는 LoRA 결과가 전면 그래픽의 중심 위치와 선명도, 소매 경계 분리에서 더 안정적인 결과를 보였다는 것을 의미합니다.
 
 다만 이 결과는 하나의 demo pair 기준 비교이므로, 모델의 일반적인 성능 향상을 주장하기보다는 “artifact-aware LoRA 결과를 설명 가능한 UI로 비교할 수 있다”는 점을 보여주는 근거로 사용합니다.
+
+#### Metric Meaning
+
+이번 데모에서 사용한 score는 모델 성능을 일반화하기 위한 공식 benchmark가 아니라, 결과 이미지의 차이를 설명하기 위한 보조 지표입니다.
+
+특히 VTON 결과에서는 다음과 같은 실패가 자주 발생할 수 있습니다.
+
+- 의류 어깨선이 사람 어깨 위치와 맞지 않음
+- 소매와 팔 영역이 섞여 경계가 흐려짐
+- 전면 그래픽이 찌그러지거나 중심에서 벗어남
+- 상의 밑단이 몸통 형태와 맞지 않게 깨짐
+- 입력 의류 색상이 결과에서 과하게 변함
+- 비정면 자세나 가림이 있는 경우 옷의 위치가 불안정해짐
+
+따라서 `Shoulder Alignment`, `Graphic Preservation`, `Sleeve Boundary`, `Hem Stability` 같은 항목은 단순 점수라기보다, 사용자가 결과 이미지를 볼 때 확인해야 하는 주요 실패 지점을 정리한 기준입니다.
+
+#### Visual Failure Cases Considered
+
+Demo pair comparison에서는 단순히 confidence score만 비교하지 않고, VTON 결과에서 자주 발생하는 시각적 실패 유형을 기준으로 결과를 확인했습니다.
+
+| Failure Type | Description |
+| --- | --- |
+| Shoulder Drift | 생성된 의류 어깨선이 사람 어깨보다 위/아래 또는 좌/우로 밀리는 현상 |
+| Sleeve Bleeding | 소매 영역이 팔이나 배경과 섞여 경계가 흐려지는 현상 |
+| Texture Distortion | 입력 의류의 그래픽, 로고, 패턴이 찌그러지거나 사라지는 현상 |
+| Hem Collapse | 상의 밑단이 몸통 형태와 맞지 않게 접히거나 무너지는 현상 |
+| Color Shift | 입력 의류의 색상이 생성 결과에서 크게 달라지는 현상 |
+| Pose-sensitive Artifacts | 팔 위치, 비정면 자세, 가림 요소에 따라 결과가 불안정해지는 현상 |
+
+이 기준들은 모델의 절대 성능을 평가하기 위한 공식 metric은 아니지만, 사용자가 실제 결과 이미지를 볼 때 어느 부분을 확인해야 하는지 설명하기 위한 기준으로 사용했습니다.
 
 
 ## 🛠️ Troubleshooting / Lessons Learned
