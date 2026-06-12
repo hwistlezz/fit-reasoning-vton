@@ -959,6 +959,24 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 
 
 
+### Experiment 8. Fixed 100-Pair LoRA Comparison
+
+10개 pair 중심의 빠른 ablation을 넘어, 동일한 `fixed_eval_100` pair set에서 4개 method를 비교했습니다.
+이번 평가는 새 학습 없이 saved adapter inference만 수행한 결과입니다.
+
+| Method | output_count | failure_count | success_rate | PSNR mean | SSIM mean |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| StableVITON baseline | 100 | 0 | 1.0 | 14.990364 | 0.130425 |
+| rank4-module8 | 100 | 0 | 1.0 | 14.965571 | 0.124778 |
+| rank8-module8 | 100 | 0 | 1.0 | 14.966314 | 0.123503 |
+| rank8-module16 | 100 | 0 | 1.0 | 15.294206 | 0.160138 |
+
+LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. PSNR/SSIM 기준 best adapter 후보는 `rank8-module16`이지만, pixel-level metric과 visual quality가 항상 일치하지 않으므로 representative contact sheet 기반 human review가 필요합니다.
+
+Generated output, raw metric CSV/JSON, contact sheet image, adapter file은 모두 `backend/training/outputs/**` 하위 local path에만 저장했고 Git에는 포함하지 않았습니다.
+
+상세 기록: [fixed 100-pair LoRA comparison](docs/experiments/pc3_fixed_eval_100_lora_comparison.md)
+
 ## ✅ Results Status
 
 ### 완료한 작업
@@ -975,6 +993,7 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 - Saved 10k adapter based inference
 - Baseline StableVITON vs LoRA generated image comparison
 - LoRA rank/module ablation training
+- fixed_eval_100 4-method inference comparison
 - 10-pair baseline/rank4/rank8 inference comparison
 - Final demo video in README
 
@@ -1105,6 +1124,7 @@ fit-reasoning-vton/
 
 - [StableVITON LoRA 10k epoch pilot](docs/experiments/pc3_stableviton_lora_10k_epoch_pilot.md)
 - [LoRA save/load smoke and inference comparison prep](docs/experiments/pc3_stableviton_lora_save_load_inference_comparison.md)
+- [fixed 100-pair LoRA comparison](docs/experiments/pc3_fixed_eval_100_lora_comparison.md)
 - [10k full artifact smoke and training log](docs/experiments/pc3_lora_10k_full_artifact_smoke_and_training.md)
 - [StableVITON AIHub layout prepare](docs/experiments/stableviton_aihub_layout_prepare.md)
 - [Demo backend API contract](docs/experiments/demo_backend_api_contract.md)
