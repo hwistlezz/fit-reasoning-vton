@@ -61,6 +61,14 @@ python scripts\validate_39k_chunk_artifact.py `
 Package dry-run:
 
 ```powershell
+python scripts\validate_stableviton_orientation.py `
+  --metadata D:\fit_transfer\reports\chunks\chunk_000\metadata_chunk_final.csv `
+  --artifact-root C:\fit_transfer\work_39k_chunks\chunk_000 `
+  --output-dir D:\fit_transfer\reports\chunks\chunk_000 `
+  --required-densepose `
+  --required-agnostic `
+  --force-pair EP00000002
+
 python scripts\package_39k_chunk.py `
   --chunk-id chunk_000 `
   --artifact-root C:\fit_transfer\work_39k_chunks\chunk_000 `
@@ -92,6 +100,8 @@ The package helper writes the exact command into:
 ```text
 C:\fit_transfer\final_packages\aihub_39k_artifact_chunk_000_v1_transfer_readme.md
 ```
+
+Do not start this step if `orientation_sanity_report.json` is missing or failed.
 
 ## HTTP Server
 

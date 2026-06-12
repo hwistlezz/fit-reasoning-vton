@@ -56,6 +56,22 @@ def assert_validation_passed(report: dict[str, Any], allow_failed: bool) -> None
         )
 
 
+def load_orientation_sanity_report(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Missing orientation sanity report: {path}. "
+            "Run scripts/validate_stableviton_orientation.py before packaging."
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def assert_orientation_sanity_passed(report: dict[str, Any]) -> None:
+    status = str(report.get("status", "")).lower()
+    failed_count = int(report.get("failed_count", 0))
+    if status not in {"passed", "ok"} or failed_count != 0:
+        raise ValueError("Orientation sanity failed. Regenerate/fix the chunk before packaging.")
+
+
 def package_name_from_chunk(chunk_id: str, version: str) -> str:
     return f"aihub_39k_artifact_{chunk_id}_{version}"
 
@@ -70,6 +86,7 @@ def make_filelist(
     output_root: Path,
     package_name: str,
     package_summary: Path,
+    extra_validation_files: list[Path] | None = None,
 ) -> Path:
     filelist = output_root / f"{package_name}_filelist.txt"
     entries: list[Path] = []
@@ -80,6 +97,10 @@ def make_filelist(
         entries.append(path)
     for filename in REQUIRED_VALIDATION_FILES:
         path = validation_dir / filename
+        if not path.exists():
+            raise FileNotFoundError(f"Missing required validation file: {path}")
+        entries.append(path)
+    for path in extra_validation_files or []:
         if not path.exists():
             raise FileNotFoundError(f"Missing required validation file: {path}")
         entries.append(path)
@@ -136,6 +157,7 @@ def write_transfer_readme(
                 "",
                 "## Before Transfer",
                 "- Confirm validation_report.json status is passed.",
+                "- Confirm orientation_sanity_report.json status is passed.",
                 "- Confirm sha256 file exists and includes every split part.",
                 "- Run the 7z test command on the first split part.",
                 "",
@@ -175,6 +197,15 @@ def package(args: argparse.Namespace) -> dict[str, Any]:
     validation_report_path = validation_dir / "validation_report.json"
     validation_report = load_validation_report(validation_report_path)
     assert_validation_passed(validation_report, args.allow_failed_validation)
+    orientation_sanity_report_path = (
+        Path(args.orientation_sanity_report)
+        if args.orientation_sanity_report
+        else validation_dir / "orientation_sanity_report.json"
+    )
+    orientation_sanity_report = None
+    if not args.skip_orientation_sanity:
+        orientation_sanity_report = load_orientation_sanity_report(orientation_sanity_report_path)
+        assert_orientation_sanity_passed(orientation_sanity_report)
 
     package_summary_path = output_root / f"{package_name}_package_summary.json"
     archive_base = output_root / f"{package_name}.7z"
@@ -192,6 +223,13 @@ def package(args: argparse.Namespace) -> dict[str, Any]:
         "validation_report": str(validation_report_path),
         "validation_status": validation_report.get("status"),
         "validation_failed_count": validation_report.get("failed_count"),
+        "orientation_sanity_report": str(orientation_sanity_report_path),
+        "orientation_sanity_status": (
+            orientation_sanity_report.get("status") if orientation_sanity_report else "skipped"
+        ),
+        "orientation_sanity_failed_count": (
+            orientation_sanity_report.get("failed_count") if orientation_sanity_report else None
+        ),
         "dry_run": args.dry_run,
     }
     package_summary_path.write_text(
@@ -205,6 +243,7 @@ def package(args: argparse.Namespace) -> dict[str, Any]:
         output_root,
         package_name,
         package_summary_path,
+        [] if args.skip_orientation_sanity else [orientation_sanity_report_path],
     )
     command = build_7z_command(args.seven_zip, archive_base, args.split_size, filelist)
     summary["filelist"] = str(filelist)
@@ -260,6 +299,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split-size", default="10g")
     parser.add_argument("--seven-zip", default="7z")
     parser.add_argument("--http-port", type=int, default=8000)
+    parser.add_argument("--orientation-sanity-report")
+    parser.add_argument(
+        "--skip-orientation-sanity",
+        action="store_true",
+        help="Debug only. Transfer packages must include a passed orientation sanity report.",
+    )
     parser.add_argument(
         "--dry-run",
         action=argparse.BooleanOptionalAction,

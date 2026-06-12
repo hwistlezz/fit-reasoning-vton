@@ -106,6 +106,22 @@ D:\fit_transfer\reports\chunks\chunk_000\manifest_chunk_final.jsonl
 
 The final package gate is `validation_report.json.status == passed` and `failed_count == 0`.
 
+## Step 3.5: Validate Layout Orientation
+
+Run the orientation sanity gate before contact sheets or packaging:
+
+```powershell
+python scripts\validate_stableviton_orientation.py `
+  --metadata D:\fit_transfer\reports\chunks\chunk_000\metadata_chunk_final.csv `
+  --artifact-root C:\fit_transfer\work_39k_chunks\chunk_000 `
+  --output-dir D:\fit_transfer\reports\chunks\chunk_000 `
+  --required-densepose `
+  --required-agnostic `
+  --force-pair EP00000002
+```
+
+This check fails the chunk when `image`, `cloth`, or `worn` still depend on EXIF orientation metadata, when person-space artifacts disagree on raw width/height, or when OpenPose keypoints fall outside the saved image coordinate system. The package helper expects `orientation_sanity_report.json` to be present and passed unless `--skip-orientation-sanity` is explicitly used for local debugging.
+
 ## Step 4: Make Contact Sheets
 
 ```powershell

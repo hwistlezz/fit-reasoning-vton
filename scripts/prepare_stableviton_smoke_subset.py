@@ -1,7 +1,8 @@
 import argparse
-import shutil
 import sys
 from pathlib import Path
+
+from stableviton_orientation import copy_without_exif
 
 
 DEFAULT_SOURCE_ROOT = r"D:\GitHub\StableVITON\DATA\zalando-hd-resized"
@@ -115,7 +116,7 @@ def copy_file(source: Path, target: Path, label: str) -> bool:
         print_status("WARN", f"missing {label}", str(source))
         return False
     target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, target)
+    copy_without_exif(source, target, label)
     print_status("OK", f"copied {label}", target.name)
     return True
 
