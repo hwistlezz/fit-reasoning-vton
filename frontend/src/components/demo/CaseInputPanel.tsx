@@ -6,9 +6,12 @@ type CaseInputPanelProps = {
   canRunComparison: boolean;
   isRunning: boolean;
   onFileChange: (slot: UploadSlotKey, file?: File) => void;
+  onResetInputs: () => void;
   onRunComparison: () => void;
   uploadError?: string;
   uploadJobId?: string;
+  uploadProgress: number;
+  uploadProgressLabel?: string;
   uploads: UploadInputs;
   uploadStatus: string;
 };
@@ -20,18 +23,18 @@ const uploadCards: {
 }[] = [
   {
     slot: "person",
-    title: "Person Image",
-    description: "\ud30c\uc77c\uc744 \uc120\ud0dd\ud558\uac70\ub098 \ub4dc\ub798\uadf8\ud574 \uc8fc\uc138\uc694",
+    title: "사람 이미지",
+    description: "가상 착장에 사용할 사람 이미지를 업로드하세요.",
   },
   {
     slot: "cloth",
-    title: "Cloth Image",
-    description: "\uc758\ub958 \uc774\ubbf8\uc9c0\ub97c \uc120\ud0dd\ud574 \uc8fc\uc138\uc694",
+    title: "의류 이미지",
+    description: "착용시킬 상의 이미지를 업로드하세요.",
   },
   {
     slot: "worn",
-    title: "Worn Image",
-    description: "\uc2e4\uc81c \ucc29\uc6a9 \ucc38\uace0 \uc774\ubbf8\uc9c0\ub97c \uc120\ud0dd\ud574 \uc8fc\uc138\uc694",
+    title: "정답 착용 이미지",
+    description: "결과 비교 기준으로 사용할 ground truth 이미지입니다.",
   },
 ];
 
@@ -46,11 +49,11 @@ function safeText(value?: string | number) {
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
     idle: "입력 대기",
-    ready: "실행 준비",
-    uploading: "업로드 중",
-    preprocessing: "전처리 중",
-    stableviton: "StableVITON 추론",
-    enhanced: "개선 결과 생성",
+    ready: "분석 준비",
+    uploading: "입력 확인 중",
+    preprocessing: "조건 정렬 중",
+    stableviton: "StableVITON 준비",
+    enhanced: "LoRA 비교 중",
     done: "완료",
     failed: "Fallback",
   };
@@ -60,12 +63,14 @@ function statusLabel(status: string) {
 
 function UploadCard({
   description,
+  fileName,
   onFileChange,
   previewUrl,
   slot,
   title,
 }: {
   description: string;
+  fileName?: string;
   onFileChange: (slot: UploadSlotKey, file?: File) => void;
   previewUrl?: string;
   slot: UploadSlotKey;
@@ -95,7 +100,7 @@ function UploadCard({
           alt={`${title} preview`}
           aspectClass="h-28"
           className="rounded-xl"
-          imageClassName="object-cover object-top"
+          imageClassName="object-contain bg-white"
           label={title}
           src={previewUrl}
         />
@@ -115,7 +120,9 @@ function UploadCard({
       {previewUrl ? (
         <div className="mt-2">
           <p className="text-sm font-semibold text-[#E5EDF8]">{title}</p>
-          <p className="text-xs leading-5 text-[#9AA8BA]">Preview ready</p>
+          <p className="truncate text-xs leading-5 text-[#9AA8BA]">
+            {fileName ?? "Preview ready"}
+          </p>
         </div>
       ) : null}
     </label>
@@ -126,12 +133,24 @@ export default function CaseInputPanel({
   canRunComparison,
   isRunning,
   onFileChange,
+  onResetInputs,
   onRunComparison,
   uploadError,
   uploadJobId,
+  uploadProgress,
+  uploadProgressLabel,
   uploads,
   uploadStatus,
 }: CaseInputPanelProps) {
+  const hasAnyUpload = Boolean(
+    uploads.person.file || uploads.cloth.file || uploads.worn.file,
+  );
+  const primaryLabel = isRunning
+    ? "분석 중..."
+    : uploadStatus === "done"
+      ? "다시 분석하기"
+      : "Fit-aware Try-On 분석하기";
+
   return (
     <aside className="rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80 p-4 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur">
       <div className="flex items-start justify-between gap-3">
@@ -152,6 +171,7 @@ export default function CaseInputPanel({
         {uploadCards.map((card) => (
           <UploadCard
             description={card.description}
+            fileName={uploads[card.slot].file?.name}
             key={card.slot}
             onFileChange={onFileChange}
             previewUrl={uploads[card.slot].previewUrl}
@@ -170,8 +190,39 @@ export default function CaseInputPanel({
           onClick={onRunComparison}
           type="button"
         >
-          {isRunning ? "Running Comparison..." : "Run Comparison"}
+          {primaryLabel}
         </button>
+        <button
+          className={[
+            "w-full rounded-xl border px-4 py-2.5 text-sm font-semibold transition",
+            hasAnyUpload && !isRunning
+              ? "border-[#6EA5FF]/24 bg-[#0C1C34]/70 text-[#D8E4FF] hover:bg-[#0C1C34]"
+              : "border-[#6EA5FF]/12 bg-[#061426]/45 text-[#5D6A7A]",
+          ].join(" ")}
+          disabled={!hasAnyUpload || isRunning}
+          onClick={onResetInputs}
+          type="button"
+        >
+          입력 초기화
+        </button>
+        {uploadProgress > 0 ? (
+          <div className="rounded-xl border border-[#6EA5FF]/16 bg-[#061426]/70 p-3">
+            <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+              <span className="text-[#9AA8BA]">
+                {uploadProgressLabel ?? "분석 결과를 준비하는 중..."}
+              </span>
+              <span className="font-semibold text-[#E5EDF8]">
+                {uploadProgress}%
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[#020817]">
+              <div
+                className="h-full rounded-full bg-[#74C365] transition-all duration-500"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
         {uploadError ? (
           <div className="rounded-xl border border-[#EF4444]/25 bg-[#EF4444]/10 px-3 py-2 text-xs leading-5 text-[#FCA5A5]">
             {uploadError}

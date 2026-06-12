@@ -7,6 +7,9 @@ type ResultCardProps = {
   helper: string;
   caption: string;
   badgeLabel: string;
+  confidenceLevel?: string;
+  confidenceScore?: number;
+  fallbackText?: string;
   imageSrc?: string;
   variant: Variant;
 };
@@ -23,11 +26,14 @@ export default function ResultCard({
   helper,
   caption,
   badgeLabel,
+  confidenceLevel,
+  confidenceScore,
+  fallbackText,
   imageSrc,
   variant,
 }: ResultCardProps) {
   return (
-    <article className="flex h-full min-h-[410px] min-w-0 flex-col rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80 p-3 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur xl:min-h-[430px]">
+    <article className="flex h-full min-h-[430px] min-w-0 flex-col rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80 p-3 shadow-[0_0_30px_rgba(30,80,160,0.12)] backdrop-blur xl:min-h-[460px]">
       <div className="mb-3 flex h-[88px] shrink-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[15px] font-semibold leading-5 text-[#E5EDF8]">
@@ -47,13 +53,30 @@ export default function ResultCard({
       <ImageWithFallback
         alt={`${title} preview`}
         aspectClass="min-h-[230px] flex-1"
-        imageClassName="object-cover object-top"
+        fallbackText={fallbackText}
+        imageClassName="object-contain bg-white"
         label={title}
         src={imageSrc}
       />
+      {confidenceScore ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-lg border border-[#6EA5FF]/18 bg-[#0C1C34]/70 px-3 py-2">
+            <p className="text-[#9AA8BA]">Confidence</p>
+            <p className="mt-1 text-lg font-semibold text-[#E5EDF8]">
+              {confidenceScore}
+            </p>
+          </div>
+          <div className="rounded-lg border border-[#6EA5FF]/18 bg-[#0C1C34]/70 px-3 py-2">
+            <p className="text-[#9AA8BA]">Level</p>
+            <p className="mt-1 text-lg font-semibold text-[#E5EDF8]">
+              {confidenceLevel}
+            </p>
+          </div>
+        </div>
+      ) : null}
       <div
         className={[
-          "mt-3 h-[76px] shrink-0 rounded-lg border px-3 py-2 text-sm leading-5",
+          "mt-3 min-h-[88px] shrink-0 rounded-lg border px-3 py-2 text-sm leading-5",
           variantStyles[variant],
         ].join(" ")}
       >

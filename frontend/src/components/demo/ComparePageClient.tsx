@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ComparePageTemplate from "./ComparePageTemplate";
-import { fetchModelCompare, getTryOnJob, startTryOnJob } from "@/lib/api";
-import { getMockModelCompare, mockSamples } from "@/lib/mockData";
-import type {
-  DemoCompareResponse,
-  TryOnJobResponse,
-  TryOnJobStatus,
-  UploadSlotKey,
-} from "@/lib/types";
+import { fetchModelCompare } from "@/lib/api";
+import {
+  getMockModelCompare,
+  localDemoArtifacts,
+  mockSamples,
+} from "@/lib/mockData";
+import type { DemoCompareResponse, UploadSlotKey } from "@/lib/types";
 
 export type UploadInputState = {
   file?: File;
@@ -29,18 +28,61 @@ type UploadUiStatus =
   | "done"
   | "failed";
 
+type ComparePageClientProps = {
+  localDemo?: boolean;
+};
+
 const emptyUploads: UploadInputs = {
   person: {},
   cloth: {},
   worn: {},
 };
 
-function statusFromJob(status: TryOnJobStatus): UploadUiStatus {
-  if (status === "pending" || status === "running") {
-    return "preprocessing";
-  }
+const progressSteps: {
+  label: string;
+  progress: number;
+  status: UploadUiStatus;
+}[] = [
+  {
+    label: "입력 이미지를 확인하는 중...",
+    progress: 0,
+    status: "uploading",
+  },
+  {
+    label: "사람 영역과 의류 영역을 정렬하는 중...",
+    progress: 25,
+    status: "preprocessing",
+  },
+  {
+    label: "StableVITON 기본 결과를 불러오는 중...",
+    progress: 45,
+    status: "stableviton",
+  },
+  {
+    label: "LoRA-enhanced 결과를 비교하는 중...",
+    progress: 70,
+    status: "enhanced",
+  },
+  {
+    label: "fit reasoning과 confidence score를 계산하는 중...",
+    progress: 90,
+    status: "enhanced",
+  },
+  {
+    label: "결과 비교 화면을 준비하는 중...",
+    progress: 100,
+    status: "done",
+  },
+];
 
-  return status;
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function hasAllUploads(uploads: UploadInputs) {
+  return Boolean(
+    uploads.person.file && uploads.cloth.file && uploads.worn.file,
+  );
 }
 
 function mergeUploadPreviews(
@@ -49,48 +91,49 @@ function mergeUploadPreviews(
 ): DemoCompareResponse {
   return {
     ...data,
-    pair_id: data.pair_id || "UPLOAD-LOCAL",
+    pair_id: "LOCAL-DEMO",
     case: {
-      pair_id: data.case?.pair_id || "UPLOAD-LOCAL",
-      category: data.case?.category || "Uploaded try-on",
-      pose_type: data.case?.pose_type || "Analysis pending",
-      difficulty: data.case?.difficulty || "Medium",
-      gt_fit_label: data.case?.gt_fit_label || "Analysis pending",
-      input_confidence: data.case?.input_confidence ?? 1,
+      pair_id: "LOCAL-DEMO",
+      category: "Upper-body virtual try-on",
+      pose_type: "Non-frontal pose with object occlusion",
+      difficulty: "High",
+      gt_fit_label: "stable oversized fit",
+      input_confidence: 0.86,
     },
     images: {
       ...data.images,
       person: uploads.person.previewUrl ?? data.images.person,
       cloth: uploads.cloth.previewUrl ?? data.images.cloth,
       target_worn: uploads.worn.previewUrl ?? data.images.target_worn,
+      stableviton: localDemoArtifacts.stableviton,
+      enhanced_result: localDemoArtifacts.enhanced_result,
+      hotspot: localDemoArtifacts.hotspot,
+      skeleton: localDemoArtifacts.skeleton,
+      densepose: localDemoArtifacts.densepose,
+      skeleton_preview: localDemoArtifacts.skeleton_preview,
+      agnostic: localDemoArtifacts.agnostic,
+      agnostic_mask: localDemoArtifacts.agnostic_mask,
+      upper_body_mask: localDemoArtifacts.upper_body_mask,
+      human_parsing_map: localDemoArtifacts.human_parsing_map,
+      cloth_mask: localDemoArtifacts.cloth_mask,
+      densepose_overlay: localDemoArtifacts.densepose_overlay,
+      agnostic_overlay: localDemoArtifacts.agnostic_overlay,
     },
   };
 }
 
-async function resolveTryOnResult(
-  response: TryOnJobResponse,
-  fallback: DemoCompareResponse,
-): Promise<TryOnJobResponse> {
-  if (response.result || !response.job_id || response.status === "failed") {
-    return response;
-  }
-
-  let latest = response;
-
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    latest = await getTryOnJob(response.job_id, fallback);
-
-    if (latest.result || latest.status === "failed") {
-      return latest;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 700));
-  }
-
-  return { status: "done", result: fallback };
+function isRunningStatus(status: UploadUiStatus) {
+  return (
+    status === "uploading" ||
+    status === "preprocessing" ||
+    status === "stableviton" ||
+    status === "enhanced"
+  );
 }
 
-export default function ComparePageClient() {
+export default function ComparePageClient({
+  localDemo = false,
+}: ComparePageClientProps) {
   const searchParams = useSearchParams();
   const selectedPairId = searchParams.get("pairId") ?? mockSamples[0].pair_id;
   const activeKey = `model:${selectedPairId}`;
@@ -103,6 +146,8 @@ export default function ComparePageClient() {
   const [uploadStatus, setUploadStatus] = useState<UploadUiStatus>("idle");
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [uploadJobId, setUploadJobId] = useState<string | undefined>();
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgressLabel, setUploadProgressLabel] = useState<string>();
   const [uploadData, setUploadData] = useState<DemoCompareResponse | undefined>();
   const [loaded, setLoaded] = useState<{
     key: string;
@@ -113,6 +158,10 @@ export default function ComparePageClient() {
   });
 
   useEffect(() => {
+    if (localDemo) {
+      return;
+    }
+
     let ignore = false;
 
     async function loadData() {
@@ -131,7 +180,7 @@ export default function ComparePageClient() {
     return () => {
       ignore = true;
     };
-  }, [activeKey, selectedPairId]);
+  }, [activeKey, localDemo, selectedPairId]);
 
   useEffect(() => {
     const urls = previewUrls.current;
@@ -142,21 +191,25 @@ export default function ComparePageClient() {
     };
   }, []);
 
-  const demoData = loaded.key === activeKey ? loaded.data : initialData;
-  const canRunComparison = Boolean(
-    uploads.person.file && uploads.cloth.file && uploads.worn.file,
-  );
-  const isRunning =
-    uploadStatus === "uploading" ||
-    uploadStatus === "preprocessing" ||
-    uploadStatus === "stableviton" ||
-    uploadStatus === "enhanced";
+  const demoData =
+    localDemo || loaded.key !== activeKey ? initialData : loaded.data;
+  const canRunComparison = hasAllUploads(uploads);
+  const isRunning = isRunningStatus(uploadStatus);
+  const displayedUploadStatus =
+    !isRunning && !uploadData
+      ? canRunComparison
+        ? "ready"
+        : "idle"
+      : uploadStatus;
   const renderedData = uploadData ?? demoData;
 
   function handleFileChange(slot: UploadSlotKey, file?: File) {
     setUploadError(undefined);
     setUploadJobId(undefined);
     setUploadData(undefined);
+    setUploadStatus("idle");
+    setUploadProgress(0);
+    setUploadProgressLabel(undefined);
 
     setUploads((current) => {
       const previousUrl = current[slot].previewUrl;
@@ -181,62 +234,42 @@ export default function ComparePageClient() {
         [slot]: { file, previewUrl },
       };
     });
+  }
 
-    setUploadStatus(file ? "ready" : "idle");
+  function handleResetInputs() {
+    previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    previewUrls.current.clear();
+    setUploads(emptyUploads);
+    setUploadStatus("idle");
+    setUploadError(undefined);
+    setUploadJobId(undefined);
+    setUploadProgress(0);
+    setUploadProgressLabel(undefined);
+    setUploadData(undefined);
   }
 
   async function handleRunComparison() {
-    if (
-      !uploads.person.file ||
-      !uploads.cloth.file ||
-      !uploads.worn.file ||
-      isRunning
-    ) {
+    if (!hasAllUploads(uploads) || isRunning) {
       return;
     }
 
-    const fallback = mergeUploadPreviews(demoData, uploads);
+    const currentUploads = uploads;
 
     setUploadError(undefined);
-    setUploadJobId(undefined);
-    setUploadStatus("uploading");
+    setUploadJobId("DEMO-LOCAL-001");
+    setUploadData(undefined);
 
-    try {
-      const started = await startTryOnJob(
-        {
-          person_image: uploads.person.file,
-          cloth_image: uploads.cloth.file,
-          worn_image: uploads.worn.file,
-        },
-        fallback,
-      );
-
-      const resolvedJobId = started.job_id ?? "UPLOAD-LOCAL";
-
-      setUploadJobId(resolvedJobId);
-      setUploadStatus(statusFromJob(started.status));
-
-      const finished = await resolveTryOnResult(started, fallback);
-      setUploadJobId(finished.job_id ?? resolvedJobId);
-
-      if (finished.status === "failed") {
-        setUploadError(finished.error ?? "Upload result generation failed.");
-        setUploadStatus("failed");
-        setUploadData(fallback);
-        return;
-      }
-
-      setUploadStatus("enhanced");
-
-      const result = mergeUploadPreviews(finished.result ?? fallback, uploads);
-      setUploadData(result);
-      setUploadStatus("done");
-    } catch (error) {
-      console.warn("[Try-on upload fallback]", error);
-      setUploadError("API response failed. Showing mock fallback result.");
-      setUploadData(fallback);
-      setUploadStatus("failed");
+    for (const step of progressSteps) {
+      setUploadStatus(step.status);
+      setUploadProgress(step.progress);
+      setUploadProgressLabel(step.label);
+      await delay(step.progress === 0 ? 350 : 470);
     }
+
+    setUploadData(mergeUploadPreviews(demoData, currentUploads));
+    setUploadStatus("done");
+    setUploadProgress(100);
+    setUploadProgressLabel("결과 비교 화면이 준비되었습니다.");
   }
 
   return (
@@ -245,11 +278,14 @@ export default function ComparePageClient() {
       data={renderedData}
       isRunning={isRunning}
       onFileChange={handleFileChange}
+      onResetInputs={handleResetInputs}
       onRunComparison={handleRunComparison}
       uploadError={uploadError}
       uploadJobId={uploadJobId}
+      uploadProgress={uploadProgress}
+      uploadProgressLabel={uploadProgressLabel}
       uploads={uploads}
-      uploadStatus={uploadStatus}
+      uploadStatus={displayedUploadStatus}
     />
   );
 }

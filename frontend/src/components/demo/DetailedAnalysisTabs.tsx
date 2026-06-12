@@ -7,7 +7,6 @@ import FitDetailsPanel from "./FitDetailsPanel";
 import HotspotPanel from "./HotspotPanel";
 import ImageWithFallback from "./ImageWithFallback";
 import ReliabilityPanel from "./ReliabilityPanel";
-import SkeletonOverlay from "./SkeletonOverlay";
 import type { DemoAnalysis, DemoImageSet } from "@/lib/types";
 
 type TabKey =
@@ -33,6 +32,9 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "fit", label: "Fit Details" },
 ];
 
+const artifactFallbackText =
+  "frontend/public/local-demo-vton/analysis 폴더의 정적 PNG를 표시합니다.";
+
 export default function DetailedAnalysisTabs({
   analysis,
   defaultTab,
@@ -50,6 +52,10 @@ export default function DetailedAnalysisTabs({
           <h2 className="mt-2 text-xl font-semibold text-[#E5EDF8]">
             Conditioning & Reliability Analysis
           </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#9AA8BA]">
+            Hotspot, Skeleton, DensePose, Agnostic Mask, Reliability 정보를
+            기준으로 가상 착장 결과의 정렬 품질과 안정성을 비교합니다.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
@@ -77,33 +83,34 @@ export default function DetailedAnalysisTabs({
       <div className="mt-5">
         {activeTab === "hotspot" ? (
           <HotspotPanel
+            fallbackText={artifactFallbackText}
             hotspots={analysis.hotspots}
-            imageSrc={images.enhanced_result}
+            imageSrc={images.hotspot}
           />
         ) : null}
         {activeTab === "skeleton" ? (
           <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
             <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
               <ImageWithFallback
-                alt="Enhanced StableVITON result with skeleton overlay"
+                alt="OpenPose skeleton static preview"
                 aspectClass="h-full min-h-[360px]"
                 className="border-0"
-                imageClassName="object-cover object-top"
-                label="Skeleton overlay"
-                src={images.enhanced_result}
+                fallbackText={artifactFallbackText}
+                imageClassName="object-contain bg-white"
+                label="Skeleton"
+                src={images.skeleton}
               />
-              <SkeletonOverlay keypoints={analysis.keypoints} />
             </div>
             <div className="rounded-2xl border border-[#6EA5FF]/18 bg-[#0C1C34]/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#38BDF8]">
                 OpenPose
               </p>
               <h3 className="mt-3 text-xl font-semibold text-[#E5EDF8]">
-                Percent-coordinate skeleton
+                Shoulder-aligned skeleton
               </h3>
               <p className="mt-3 text-sm leading-6 text-[#9AA8BA]">
-                OpenPose keypoint를 오버레이해 어깨, 팔꿈치, 손목, 골반의
-                정렬 상태를 확인하고 생성 결과의 자세 안정성을 비교합니다.
+                정적 PNG 결과를 기준으로 어깨선, 팔 각도, 골반 정렬을 확인해
+                비정면 착장 결과의 자세 안정성을 설명합니다.
               </p>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 {analysis.keypoints.map((point) => (
@@ -122,10 +129,18 @@ export default function DetailedAnalysisTabs({
           </div>
         ) : null}
         {activeTab === "densepose" ? (
-          <DensePosePanel analysis={analysis} images={images} />
+          <DensePosePanel
+            analysis={analysis}
+            fallbackText={artifactFallbackText}
+            images={images}
+          />
         ) : null}
         {activeTab === "agnostic" ? (
-          <AgnosticPanel analysis={analysis} images={images} />
+          <AgnosticPanel
+            analysis={analysis}
+            fallbackText={artifactFallbackText}
+            images={images}
+          />
         ) : null}
         {activeTab === "reliability" ? (
           <ReliabilityPanel reliability={analysis.reliability} />
