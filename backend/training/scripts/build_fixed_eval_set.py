@@ -23,6 +23,12 @@ def parse_args() -> argparse.Namespace:
         default=r"D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_layout_10k_train",
     )
     parser.add_argument(
+        "--data-format",
+        choices=("stableviton-layout", "aihub-raw"),
+        default="stableviton-layout",
+        help="Read either an existing StableVITON layout or the raw AIHub artifact dataset.",
+    )
+    parser.add_argument(
         "--output-root",
         default=r"D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison",
     )
@@ -46,12 +52,68 @@ def read_pairs(path: Path) -> list[tuple[str, str]]:
     return pairs
 
 
+def read_manifest_pairs(path: Path) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        row = json.loads(stripped)
+        pair_id = row.get("pair_id")
+        if not pair_id:
+            continue
+        filename = f"{pair_id}.jpg"
+        pairs.append((filename, filename))
+    return pairs
+
+
 def pair_id_from_name(name: str) -> str:
     return Path(name).stem
 
 
-def candidate_artifacts(root: Path, split: str, image_name: str, cloth_name: str) -> dict[str, Path]:
+def first_existing(candidates: list[Path]) -> Path:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def candidate_artifacts(
+    root: Path,
+    split: str,
+    image_name: str,
+    cloth_name: str,
+    data_format: str,
+) -> dict[str, Path]:
     pair_id = pair_id_from_name(image_name)
+    if data_format == "aihub-raw":
+        return {
+            "person_image": root / "image" / f"{pair_id}.jpg",
+            "cloth_image": root / "cloth" / f"{pair_id}.jpg",
+            "agnostic_person": first_existing(
+                [
+                    root / "agnostic-v3.2" / f"{pair_id}.jpg",
+                    root / "agnostic-v3.2" / f"{pair_id}.png",
+                ]
+            ),
+            "agnostic_mask": root / "agnostic-mask" / f"{pair_id}.png",
+            "cloth_mask": root / "cloth-mask" / f"{pair_id}.png",
+            "densepose": first_existing(
+                [
+                    root / "image-densepose" / f"{pair_id}.jpg",
+                    root / "image-densepose" / f"{pair_id}.png",
+                ]
+            ),
+            "human_parsing": root / "image-parse" / f"{pair_id}.png",
+            "openpose_json": first_existing(
+                [
+                    root / "openpose-json" / f"{pair_id}_keypoints.json",
+                    root / "openpose-json" / f"{pair_id}.json",
+                ]
+            ),
+            "target_worn": root / "worn" / f"{pair_id}.jpg",
+        }
+
     split_root = root / split
     return {
         "person_image": split_root / "image" / image_name,
@@ -92,6 +154,7 @@ def build_eval_layout(
     source_split: str,
     width: int,
     height: int,
+    data_format: str,
 ) -> Path:
     eval_root = output_root / "fixed_eval_100_data"
     test_root = eval_root / "test"
@@ -103,7 +166,7 @@ def build_eval_layout(
     )
 
     for image_name, cloth_name in selected_pairs:
-        artifacts = candidate_artifacts(data_root, source_split, image_name, cloth_name)
+        artifacts = candidate_artifacts(data_root, source_split, image_name, cloth_name, data_format)
         resize_copy(artifacts["person_image"], test_root / "image" / image_name, width, height)
         resize_copy(artifacts["cloth_image"], test_root / "cloth" / cloth_name, width, height)
         resize_copy(artifacts["agnostic_person"], test_root / "agnostic-v3.2" / image_name, width, height)
@@ -124,11 +187,17 @@ def main() -> int:
     summary_path = Path(args.summary_json) if args.summary_json else output_root / "fixed_eval_100_summary.json"
     pair_list_path = output_root / "fixed_eval_100_pairs.txt"
 
-    source_pair_file = data_root / f"{args.source_split}_pairs.txt"
-    if not source_pair_file.exists():
-        raise FileNotFoundError(f"pair file not found: {source_pair_file}")
+    if args.data_format == "aihub-raw":
+        source_pair_file = data_root / "manifest.jsonl"
+        if not source_pair_file.exists():
+            raise FileNotFoundError(f"manifest file not found: {source_pair_file}")
+        pairs = read_manifest_pairs(source_pair_file)
+    else:
+        source_pair_file = data_root / f"{args.source_split}_pairs.txt"
+        if not source_pair_file.exists():
+            raise FileNotFoundError(f"pair file not found: {source_pair_file}")
+        pairs = read_pairs(source_pair_file)
 
-    pairs = read_pairs(source_pair_file)
     seen: set[str] = set()
     ready_pairs: list[tuple[str, str]] = []
     missing_examples: list[dict[str, Any]] = []
@@ -137,7 +206,7 @@ def main() -> int:
         if pair_id in seen:
             continue
         seen.add(pair_id)
-        artifacts = candidate_artifacts(data_root, args.source_split, image_name, cloth_name)
+        artifacts = candidate_artifacts(data_root, args.source_split, image_name, cloth_name, args.data_format)
         missing = [name for name, path in artifacts.items() if not path.exists()]
         if missing:
             if len(missing_examples) < 20:
@@ -155,6 +224,7 @@ def main() -> int:
         source_split=args.source_split,
         width=args.image_width,
         height=args.image_height,
+        data_format=args.data_format,
     )
     pair_list_path.write_text(
         "".join(f"{pair_id_from_name(image_name)}\n" for image_name, _ in selected_pairs),
@@ -164,6 +234,7 @@ def main() -> int:
     summary: dict[str, Any] = {
         "task": "build_fixed_eval_set",
         "data_root": str(data_root),
+        "data_format": args.data_format,
         "source_split": args.source_split,
         "output_root": str(output_root),
         "eval_root": str(eval_root),

@@ -12,7 +12,7 @@
 - 기존 `stableviton_aihub_10k_layout_10k_train/train/image/EP00000002.jpg`: EXIF 제거 후 왼쪽 회전 상태
 - agnostic / densepose 계열 artifact는 upright 상태
 
-따라서 기존 fixed_eval_100 inference와 PSNR/SSIM 표는 **실행 파이프라인이 100개 pair를 처리했다는 기록**으로만 유지한다. 입력 이미지와 artifact의 좌표계가 섞인 상태였기 때문에, 아래 수치는 최종 adapter 선택 근거로 사용하지 않는다. fixed_eval_100은 EXIF orientation 보정이 반영된 layout으로 재생성한 뒤 다시 inference/metric/contact sheet를 만들어야 한다.
+따라서 기존 fixed_eval_100 inference와 PSNR/SSIM 표는 **실행 파이프라인이 100개 pair를 처리했다는 기록**으로만 유지한다. 입력 이미지와 artifact의 좌표계가 섞인 상태였기 때문에, 기존 수치는 최종 adapter 선택 근거로 사용하지 않는다.
 
 보정 내용:
 
@@ -22,11 +22,14 @@
 - `run_stableviton_lora_tiny_smoke.py`: smoke dataset shape 보정 시 EXIF orientation 적용
 - `evaluate_lora_outputs.py`: metric 계산용 이미지 로드 시 EXIF orientation 적용
 
-sanity 확인:
+sanity 및 재실행 확인:
 
 - raw artifact dataset에서 tiny3 layout을 재생성했고, `EP00000002`의 person / worn / agnostic / densepose가 모두 upright 상태로 저장되는 것을 확인했다.
 - 보정된 tiny3 layout으로 baseline / rank4 LoRA inference가 성공했다.
-- 다만 보정된 3개 pair에서도 garment alignment 품질은 아직 안정적이지 않았으므로, 방향 문제 수정과 별개로 inference quality는 후속 재평가가 필요하다.
+- full 9995 corrected layout copy는 high-resolution artifact 전체를 resize/copy하는 비용 때문에 5723개에서 timeout되어 평가에 사용하지 않았다.
+- 최종 평가는 raw AIHub artifact dataset에서 fixed_eval_100 100개만 직접 `ImageOps.exif_transpose()` 적용 후 생성한 `_exif_fixed` layout으로 재실행했다.
+- `_exif_fixed` contact sheet에서 person / target 방향 오류가 사라진 것을 확인했다.
+- 다만 보정 후에도 garment alignment와 texture quality는 pair별 편차가 있으므로, metric과 별개로 visual review가 필요하다.
 
 ## 1. 목적
 
@@ -47,10 +50,10 @@ sanity 확인:
 
 ## 3. Pair 선정 기준
 
-사용 source layout:
+사용 source dataset:
 
 ```text
-D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_layout_10k_train
+D:\GitHub\fit-reasoning-vton\backend\datasets\lora_pilot_aihub_10k_agnostic_v3_full
 ```
 
 선정 스크립트:
@@ -61,7 +64,7 @@ backend/training/scripts/build_fixed_eval_set.py
 
 선정 조건:
 
-- source split: `train`
+- data_format: `aihub-raw`
 - seed: `124`
 - requested_count: `100`
 - source_pair_count: `9995`
@@ -75,7 +78,7 @@ backend/training/scripts/build_fixed_eval_set.py
 생성된 local pair list:
 
 ```text
-D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison\fixed_eval_100_pairs.txt
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_pairs.txt
 ```
 
 선정된 pair_id:
@@ -118,11 +121,11 @@ EP00026524, EP00026977, EP00027054, EP00027284, EP00027558
 
 공통 조건:
 
-- data_root: `backend/training/outputs/fixed_eval_100_lora_comparison/fixed_eval_100_data`
+- data_root: `backend/training/outputs/fixed_eval_100_lora_comparison_exif_fixed/fixed_eval_100_data`
 - pair_count: `100`
 - denoise_steps: `50`
 - batch_size: `1`
-- output_root: `backend/training/outputs/fixed_eval_100_lora_comparison`
+- output_root: `backend/training/outputs/fixed_eval_100_lora_comparison_exif_fixed`
 
 | Method | output_count | failure_count | success_rate | adapter_loaded | missing_keys | unexpected_keys | shape_mismatch |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- |
@@ -135,10 +138,10 @@ Runtime summary:
 
 | Method | elapsed_sec | avg_inference_time_sec | peak_vram_mb | loaded_lora_keys | adapter_file_size_mb |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| baseline StableVITON | 1225.9229 | 12.2592 | 7841.9 | 0 | - |
-| rank4-module8 | 1140.6531 | 11.4065 | 7859.35 | 16 | 0.1236 |
-| rank8-module8 | 1138.9761 | 11.3898 | 7842.14 | 16 | 0.2408 |
-| rank8-module16 | 1358.0731 | 13.5807 | 7842.65 | 32 | 0.7546 |
+| baseline StableVITON | 1653.6947 | 16.5369 | 7841.9 | 0 | - |
+| rank4-module8 | 1517.8863 | 15.1789 | 7859.35 | 16 | 0.1236 |
+| rank8-module8 | 1542.7372 | 15.4274 | 7842.14 | 16 | 0.2408 |
+| rank8-module16 | 1497.4287 | 14.9743 | 7842.65 | 32 | 0.7546 |
 
 ## 6. 정량 지표
 
@@ -151,7 +154,7 @@ backend/training/scripts/evaluate_lora_outputs.py
 기준 이미지:
 
 ```text
-fixed_eval_100_data/test/worn/{pair_id}.jpg
+fixed_eval_100_lora_comparison_exif_fixed/fixed_eval_100_data/test/worn/{pair_id}.jpg
 ```
 
 계산 조건:
@@ -163,12 +166,12 @@ fixed_eval_100_data/test/worn/{pair_id}.jpg
 
 | Method | PSNR mean | SSIM mean | LPIPS |
 | --- | ---: | ---: | --- |
-| baseline StableVITON | 14.990364 | 0.130425 | skipped |
-| rank4-module8 | 14.965571 | 0.124778 | skipped |
-| rank8-module8 | 14.966314 | 0.123503 | skipped |
-| rank8-module16 | 15.294206 | 0.160138 | skipped |
+| baseline StableVITON | 18.863788 | 0.634995 | skipped |
+| rank4-module8 | 18.813872 | 0.628672 | skipped |
+| rank8-module8 | 18.874149 | 0.635203 | skipped |
+| rank8-module16 | 18.964847 | 0.636894 | skipped |
 
-이번 fixed_eval_100의 PSNR/SSIM 기준으로는 rank8-module16이 가장 높은 평균값을 보였다. 다만 위 Follow-up에서 확인한 EXIF orientation mismatch 때문에 이 표는 최종 adapter 선택 근거로 사용하지 않는다. 또한 PSNR/SSIM은 target/worn image와의 pixel-level 유사도에 가까운 지표이며, garment boundary, identity preservation, texture artifact, body distortion 같은 visual quality와 항상 일치하지 않는다.
+EXIF orientation을 보정한 fixed_eval_100의 PSNR/SSIM 기준으로는 rank8-module16이 가장 높은 평균값을 보였다. 다만 PSNR/SSIM은 target/worn image와의 pixel-level 유사도에 가까운 지표이며, garment boundary, identity preservation, texture artifact, body distortion 같은 visual quality와 항상 일치하지 않는다.
 
 ## 7. Representative contact sheet
 
@@ -181,10 +184,10 @@ person | cloth | target/worn | baseline | rank4-module8 | rank8-module8 | rank8-
 생성 위치:
 
 ```text
-D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison\contact_sheet\fixed_eval_100_sample20_contact_sheet.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\contact_sheet\fixed_eval_100_sample20_contact_sheet.jpg
 ```
 
-contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 않았다.
+contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 않았다. 보정된 contact sheet에서 person / target 방향 오류는 사라졌다.
 
 ## 8. Best adapter 후보
 
@@ -194,14 +197,12 @@ contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 
 - SSIM mean 최고: rank8-module16
 - inference success rate: 네 method 모두 1.0
 
-기존 결과만 보면 fixed_eval_100의 정량 지표 기준 best adapter 후보는 **rank8-module16**이었다. 그러나 EXIF orientation mismatch가 확인되었으므로 이 결론은 **provisional**로만 남기고, 최종 후보 재선정은 보정된 fixed_eval_100 재실행 후 진행한다.
+EXIF orientation 보정 후 fixed_eval_100의 정량 지표 기준 best adapter 후보는 **rank8-module16**이다.
 
 다만 이전 10-pair qualitative ablation에서는 rank8-module16이 일부 pair에서 texture artifact가 더 눈에 띈다는 관찰이 있었다. 최종 demo model을 고르려면 fixed_eval_100 contact sheet를 기준으로 사람 검수 visual review를 함께 수행해야 한다.
 
 ## 9. 다음 단계
 
-- EXIF orientation 보정이 반영된 layout으로 fixed_eval_100을 재생성한다.
-- 보정된 fixed_eval_100으로 baseline / rank4 / rank8-module8 / rank8-module16 inference를 다시 실행한다.
 - 보정된 fixed_eval_100 contact sheet를 사람 기준으로 review한다.
 - rank8-module16과 rank8-module8의 visual failure case를 pair별로 분류한다.
 - LPIPS 또는 perceptual metric 환경을 별도로 준비해 재평가한다.
