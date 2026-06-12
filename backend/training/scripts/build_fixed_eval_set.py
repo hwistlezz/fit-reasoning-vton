@@ -13,7 +13,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +73,7 @@ def resize_copy(src: Path, dst: Path, width: int, height: int, is_mask: bool = F
     mode = "L" if is_mask else "RGB"
     resample = Image.Resampling.NEAREST if is_mask else Image.Resampling.BILINEAR
     with Image.open(src) as image:
+        image = ImageOps.exif_transpose(image)
         image = image.convert(mode).resize((width, height), resample)
         image.save(dst)
 

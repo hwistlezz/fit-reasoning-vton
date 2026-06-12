@@ -964,6 +964,8 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 10개 pair 중심의 빠른 ablation을 넘어, 동일한 `fixed_eval_100` pair set에서 4개 method를 비교했습니다.
 이번 평가는 새 학습 없이 saved adapter inference만 수행한 결과입니다.
 
+후속 contact sheet review에서 일부 person/target 입력 이미지가 EXIF orientation을 반영하지 못한 채 왼쪽으로 회전된 상태로 평가셋에 들어간 것을 확인했습니다. 따라서 아래 표는 100-pair inference/metric pipeline 실행 기록으로만 유지하며, 최종 adapter 선택 근거로 사용하지 않습니다. EXIF orientation 보정이 반영된 layout으로 fixed_eval_100을 재생성한 뒤 다시 비교해야 합니다.
+
 | Method | output_count | failure_count | success_rate | PSNR mean | SSIM mean |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | StableVITON baseline | 100 | 0 | 1.0 | 14.990364 | 0.130425 |
@@ -971,7 +973,7 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 | rank8-module8 | 100 | 0 | 1.0 | 14.966314 | 0.123503 |
 | rank8-module16 | 100 | 0 | 1.0 | 15.294206 | 0.160138 |
 
-LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. PSNR/SSIM 기준 best adapter 후보는 `rank8-module16`이지만, pixel-level metric과 visual quality가 항상 일치하지 않으므로 representative contact sheet 기반 human review가 필요합니다.
+LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. 기존 PSNR/SSIM 기준으로는 `rank8-module16`이 가장 높았지만, orientation mismatch가 확인되었으므로 best adapter 후보는 보정된 fixed_eval_100 재실행 후 다시 판단합니다.
 
 Generated output, raw metric CSV/JSON, contact sheet image, adapter file은 모두 `backend/training/outputs/**` 하위 local path에만 저장했고 Git에는 포함하지 않았습니다.
 

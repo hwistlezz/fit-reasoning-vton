@@ -20,7 +20,7 @@ import cv2
 import numpy as np
 import torch
 from omegaconf import OmegaConf
-from PIL import Image
+from PIL import Image, ImageOps
 from torch.utils.data import DataLoader
 
 
@@ -90,6 +90,7 @@ def resize_copy_image(src: Path, dst: Path, width: int, height: int, is_mask: bo
     mode = "L" if is_mask else "RGB"
     resample = Image.Resampling.NEAREST if is_mask else Image.Resampling.BILINEAR
     with Image.open(src) as image:
+        image = ImageOps.exif_transpose(image)
         image = image.convert(mode).resize((width, height), resample)
         image.save(dst)
 

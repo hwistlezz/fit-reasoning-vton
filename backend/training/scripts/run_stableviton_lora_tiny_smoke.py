@@ -19,7 +19,7 @@ from typing import Any
 
 import torch
 from pytorch_lightning.callbacks import Callback
-from PIL import Image
+from PIL import Image, ImageOps
 from torch import nn
 from torch.utils.data import DataLoader
 
@@ -142,6 +142,7 @@ def ensure_smoke_dataset_shape(data_root: Path, width: int, height: int) -> None
             mode = "L" if is_mask else "RGB"
             resample = Image.Resampling.NEAREST if is_mask else Image.Resampling.BILINEAR
             with Image.open(path) as image:
+                image = ImageOps.exif_transpose(image)
                 image = image.convert(mode).resize((width, height), resample)
                 image.save(path)
 

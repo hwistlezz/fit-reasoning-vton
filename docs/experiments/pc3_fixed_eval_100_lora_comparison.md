@@ -1,5 +1,33 @@
 # PC3 fixed_eval_100 LoRA comparison
 
+## 0. Follow-up: EXIF orientation issue
+
+대표 contact sheet를 확인한 뒤 `EP00000002`를 포함한 일부 입력 이미지가 왼쪽으로 회전된 상태로 평가셋에 들어간 것을 확인했다. raw AIHub 이미지에는 EXIF orientation이 남아 있었지만, 기존 layout/fixed_eval 생성 과정에서 `ImageOps.exif_transpose()`를 적용하지 않고 resize/save하면서 person/target 이미지의 실제 픽셀 방향이 잘못 고정됐다.
+
+확인한 대표 사례:
+
+- raw `image/EP00000002.jpg`: EXIF orientation `6`
+- raw `worn/EP00000002.jpg`: EXIF orientation `6`
+- raw `cloth/EP00000002.jpg`: EXIF orientation `8`
+- 기존 `stableviton_aihub_10k_layout_10k_train/train/image/EP00000002.jpg`: EXIF 제거 후 왼쪽 회전 상태
+- agnostic / densepose 계열 artifact는 upright 상태
+
+따라서 기존 fixed_eval_100 inference와 PSNR/SSIM 표는 **실행 파이프라인이 100개 pair를 처리했다는 기록**으로만 유지한다. 입력 이미지와 artifact의 좌표계가 섞인 상태였기 때문에, 아래 수치는 최종 adapter 선택 근거로 사용하지 않는다. fixed_eval_100은 EXIF orientation 보정이 반영된 layout으로 재생성한 뒤 다시 inference/metric/contact sheet를 만들어야 한다.
+
+보정 내용:
+
+- `prepare_stableviton_layout.py`: copy mode에서 image-like artifact를 `ImageOps.exif_transpose()` 후 384x512로 저장
+- `build_fixed_eval_set.py`: fixed eval layout 생성 시 EXIF orientation 적용
+- `run_saved_lora_inference_comparison.py`: inference data 준비 시 EXIF orientation 적용
+- `run_stableviton_lora_tiny_smoke.py`: smoke dataset shape 보정 시 EXIF orientation 적용
+- `evaluate_lora_outputs.py`: metric 계산용 이미지 로드 시 EXIF orientation 적용
+
+sanity 확인:
+
+- raw artifact dataset에서 tiny3 layout을 재생성했고, `EP00000002`의 person / worn / agnostic / densepose가 모두 upright 상태로 저장되는 것을 확인했다.
+- 보정된 tiny3 layout으로 baseline / rank4 LoRA inference가 성공했다.
+- 다만 보정된 3개 pair에서도 garment alignment 품질은 아직 안정적이지 않았으므로, 방향 문제 수정과 별개로 inference quality는 후속 재평가가 필요하다.
+
 ## 1. 목적
 
 이번 작업은 현재 보유한 StableVITON LoRA adapters를 같은 100개 pair 기준으로 비교하기 위한 fixed evaluation set을 구축하고, baseline StableVITON / rank4-module8 / rank8-module8 / rank8-module16 결과를 같은 조건에서 생성한 기록이다.
@@ -140,7 +168,7 @@ fixed_eval_100_data/test/worn/{pair_id}.jpg
 | rank8-module8 | 14.966314 | 0.123503 | skipped |
 | rank8-module16 | 15.294206 | 0.160138 | skipped |
 
-이번 fixed_eval_100의 PSNR/SSIM 기준으로는 rank8-module16이 가장 높은 평균값을 보였다. 다만 PSNR/SSIM은 target/worn image와의 pixel-level 유사도에 가까운 지표이며, garment boundary, identity preservation, texture artifact, body distortion 같은 visual quality와 항상 일치하지 않는다.
+이번 fixed_eval_100의 PSNR/SSIM 기준으로는 rank8-module16이 가장 높은 평균값을 보였다. 다만 위 Follow-up에서 확인한 EXIF orientation mismatch 때문에 이 표는 최종 adapter 선택 근거로 사용하지 않는다. 또한 PSNR/SSIM은 target/worn image와의 pixel-level 유사도에 가까운 지표이며, garment boundary, identity preservation, texture artifact, body distortion 같은 visual quality와 항상 일치하지 않는다.
 
 ## 7. Representative contact sheet
 
@@ -166,13 +194,15 @@ contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 
 - SSIM mean 최고: rank8-module16
 - inference success rate: 네 method 모두 1.0
 
-따라서 fixed_eval_100의 정량 지표 기준 best adapter 후보는 **rank8-module16**으로 재선정한다.
+기존 결과만 보면 fixed_eval_100의 정량 지표 기준 best adapter 후보는 **rank8-module16**이었다. 그러나 EXIF orientation mismatch가 확인되었으므로 이 결론은 **provisional**로만 남기고, 최종 후보 재선정은 보정된 fixed_eval_100 재실행 후 진행한다.
 
 다만 이전 10-pair qualitative ablation에서는 rank8-module16이 일부 pair에서 texture artifact가 더 눈에 띈다는 관찰이 있었다. 최종 demo model을 고르려면 fixed_eval_100 contact sheet를 기준으로 사람 검수 visual review를 함께 수행해야 한다.
 
 ## 9. 다음 단계
 
-- fixed_eval_100 contact sheet를 사람 기준으로 review한다.
+- EXIF orientation 보정이 반영된 layout으로 fixed_eval_100을 재생성한다.
+- 보정된 fixed_eval_100으로 baseline / rank4 / rank8-module8 / rank8-module16 inference를 다시 실행한다.
+- 보정된 fixed_eval_100 contact sheet를 사람 기준으로 review한다.
 - rank8-module16과 rank8-module8의 visual failure case를 pair별로 분류한다.
 - LPIPS 또는 perceptual metric 환경을 별도로 준비해 재평가한다.
 - demo에 사용할 pair 3-5개를 fixed_eval_100에서 선별한다.

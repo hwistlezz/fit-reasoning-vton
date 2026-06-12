@@ -16,7 +16,7 @@ from statistics import mean
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 
 
 @dataclass(frozen=True)
@@ -65,6 +65,7 @@ def output_name(person_name: str, cloth_name: str) -> str:
 
 def load_rgb(path: Path, size: tuple[int, int] | None = None) -> Image.Image:
     with Image.open(path) as image:
+        image = ImageOps.exif_transpose(image)
         image = image.convert("RGB")
         if size is not None and image.size != size:
             image = image.resize(size, Image.Resampling.BILINEAR)

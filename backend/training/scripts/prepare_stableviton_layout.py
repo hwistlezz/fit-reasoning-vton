@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from PIL import Image, ImageOps
+
 
 DEFAULT_DATA_ROOT = Path("backend/datasets/lora_pilot_aihub_10k_agnostic_v3_full")
 DEFAULT_OUTPUT_ROOT = Path("backend/datasets/stableviton_aihub_10k_layout")
@@ -27,6 +29,17 @@ BASE_REQUIRED_ARTIFACTS = (
 )
 OPTIONAL_DENSEPOSE_ARTIFACT = "image-densepose"
 ALL_ARTIFACTS = (*BASE_REQUIRED_ARTIFACTS, OPTIONAL_DENSEPOSE_ARTIFACT)
+IMAGE_ARTIFACTS = {
+    "image",
+    "cloth",
+    "worn",
+    "agnostic-v3.2",
+    "agnostic-mask",
+    "image-parse",
+    "cloth-mask",
+    "image-densepose",
+}
+MASK_ARTIFACTS = {"agnostic-mask", "image-parse", "cloth-mask"}
 
 
 @dataclass(frozen=True)
@@ -95,6 +108,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=("dry-run", "copy"), default="dry-run")
     parser.add_argument("--require-densepose", action="store_true")
     parser.add_argument("--summary-json", type=Path, default=DEFAULT_SUMMARY_JSON)
+    parser.add_argument("--image-height", type=int, default=512)
+    parser.add_argument("--image-width", type=int, default=384)
     return parser.parse_args()
 
 
@@ -114,7 +129,13 @@ def main() -> int:
         ]
 
         if args.mode == "copy":
-            _copy_ready_samples(args.output_root, readiness, optional_artifacts)
+            _copy_ready_samples(
+                args.output_root,
+                readiness,
+                optional_artifacts,
+                image_width=args.image_width,
+                image_height=args.image_height,
+            )
 
         summary = _build_summary(
             args=args,
@@ -229,6 +250,8 @@ def _copy_ready_samples(
     output_root: Path,
     readiness: list[SampleReadiness],
     optional_artifacts: tuple[str, ...],
+    image_width: int,
+    image_height: int,
 ) -> None:
     _create_layout_dirs(output_root)
     pairs_by_split: dict[str, list[tuple[str, str]]] = {"train": [], "test": []}
@@ -245,7 +268,13 @@ def _copy_ready_samples(
                 raise FileNotFoundError(f"ready sample missing required path: {sample.pair_id} {artifact_name}")
             destination = _destination_path(output_root, sample.split, sample.pair_id, artifact_name, source)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+            _copy_artifact(
+                source=source,
+                destination=destination,
+                artifact_name=artifact_name,
+                image_width=image_width,
+                image_height=image_height,
+            )
 
         image_filename = f"{sample.pair_id}.jpg"
         cloth_filename = f"{sample.pair_id}.jpg"
@@ -267,6 +296,25 @@ def _destination_path(output_root: Path, split: str, pair_id: str, artifact_name
         raise ValueError(f"artifact has no destination pattern: {artifact_name}")
     relative_path = destination_pattern.format(pair_id=pair_id, source_name=source.name)
     return output_root / split / relative_path
+
+
+def _copy_artifact(
+    source: Path,
+    destination: Path,
+    artifact_name: str,
+    image_width: int,
+    image_height: int,
+) -> None:
+    if artifact_name not in IMAGE_ARTIFACTS:
+        shutil.copy2(source, destination)
+        return
+
+    mode = "L" if artifact_name in MASK_ARTIFACTS else "RGB"
+    resample = Image.Resampling.NEAREST if artifact_name in MASK_ARTIFACTS else Image.Resampling.BILINEAR
+    with Image.open(source) as image:
+        image = ImageOps.exif_transpose(image)
+        image = image.convert(mode).resize((image_width, image_height), resample)
+        image.save(destination)
 
 
 def _write_pairs(path: Path, pairs: list[tuple[str, str]]) -> None:
@@ -331,6 +379,8 @@ def _build_summary(
             "agnostic_mask_destination": "agnostic-mask/{pair_id}_mask.png",
             "cloth_mask_destination": "cloth-mask/{pair_id}.jpg",
             "densepose_destination": "image-densepose/{pair_id}.jpg",
+            "image_size": [args.image_height, args.image_width],
+            "image_orientation_note": "image-like artifacts are normalized with ImageOps.exif_transpose before resize/copy.",
             "worn_target_note": "worn is copied as a target candidate, but StableVITON image/worn mapping must be rechecked before training.",
         },
     }
