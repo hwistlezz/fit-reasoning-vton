@@ -3,11 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.stableviton_orientation import copy_without_exif
 
 
 DEFAULT_DATA_ROOT = Path("backend/datasets/lora_pilot_aihub_10k_agnostic_v3_full")
@@ -245,7 +250,7 @@ def _copy_ready_samples(
                 raise FileNotFoundError(f"ready sample missing required path: {sample.pair_id} {artifact_name}")
             destination = _destination_path(output_root, sample.split, sample.pair_id, artifact_name, source)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+            _copy_artifact(source, destination, artifact_name)
 
         image_filename = f"{sample.pair_id}.jpg"
         cloth_filename = f"{sample.pair_id}.jpg"
@@ -267,6 +272,10 @@ def _destination_path(output_root: Path, split: str, pair_id: str, artifact_name
         raise ValueError(f"artifact has no destination pattern: {artifact_name}")
     relative_path = destination_pattern.format(pair_id=pair_id, source_name=source.name)
     return output_root / split / relative_path
+
+
+def _copy_artifact(source: Path, destination: Path, artifact_name: str) -> None:
+    copy_without_exif(source, destination, artifact_name)
 
 
 def _write_pairs(path: Path, pairs: list[tuple[str, str]]) -> None:

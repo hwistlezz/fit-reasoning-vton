@@ -18,7 +18,13 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    def tqdm(iterable, **_kwargs):
+        return iterable
+
+from stableviton_orientation import copy_rgb_exif_transposed
 
 
 def read_pairs(path: Path) -> list[dict[str, str]]:
@@ -57,14 +63,17 @@ def ensure_dirs(root: Path, split: str) -> dict[str, Path]:
     return out
 
 
-def copy_if_exists(src: str, dst: Path) -> bool:
+def copy_if_exists(src: str, dst: Path, *, normalize_rgb: bool = False) -> bool:
     if not src:
         return False
     p = Path(src)
     if not p.exists():
         return False
     dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(p, dst)
+    if normalize_rgb:
+        copy_rgb_exif_transposed(p, dst)
+    else:
+        shutil.copy2(p, dst)
     return True
 
 
@@ -132,9 +141,9 @@ def main() -> None:
             continue
 
         errors = []
-        ok_person = copy_if_exists(pair.get("person_image", ""), dirs["image"] / f"{pair_id}.jpg")
-        ok_cloth = copy_if_exists(pair.get("cloth_image", ""), dirs["cloth"] / f"{pair_id}.jpg")
-        ok_worn = copy_if_exists(pair.get("worn_image", ""), dirs["worn"] / f"{pair_id}.jpg")
+        ok_person = copy_if_exists(pair.get("person_image", ""), dirs["image"] / f"{pair_id}.jpg", normalize_rgb=True)
+        ok_cloth = copy_if_exists(pair.get("cloth_image", ""), dirs["cloth"] / f"{pair_id}.jpg", normalize_rgb=True)
+        ok_worn = copy_if_exists(pair.get("worn_image", ""), dirs["worn"] / f"{pair_id}.jpg", normalize_rgb=True)
 
         if not ok_person:
             errors.append(("copy", "MISSING_PERSON_IMAGE", pair.get("person_image", "")))
