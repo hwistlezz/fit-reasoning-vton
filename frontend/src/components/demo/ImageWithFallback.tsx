@@ -10,6 +10,7 @@ type ImageWithFallbackProps = {
   aspectClass?: string;
   className?: string;
   imageClassName?: string;
+  fallbackText?: string;
   priority?: boolean;
 };
 
@@ -20,13 +21,15 @@ export default function ImageWithFallback({
   aspectClass = "aspect-[3/4]",
   className = "",
   imageClassName = "object-cover",
+  fallbackText = "이미지를 불러올 수 없습니다.",
   priority = false,
 }: ImageWithFallbackProps) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>();
 
   const showFallback = !src || failedSrc === src;
   const isLocalPreview =
-    typeof src === "string" && (src.startsWith("blob:") || src.startsWith("data:"));
+    typeof src === "string" &&
+    (src.startsWith("blob:") || src.startsWith("data:"));
 
   return (
     <div
@@ -44,7 +47,7 @@ export default function ImageWithFallback({
               <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-[#5B8CFF]/35" />
               <p className="text-sm font-semibold text-[#E5EDF8]">{label}</p>
               <p className="mt-1 text-xs leading-5 text-[#9AA8BA]">
-                이미지를 불러올 수 없습니다.
+                {fallbackText}
               </p>
             </div>
           </div>

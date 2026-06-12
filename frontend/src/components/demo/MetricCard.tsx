@@ -9,6 +9,10 @@ function formatValue(value: number, unit?: string) {
     return `${Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)}%`;
   }
 
+  if (unit === "score" || value > 1) {
+    return value.toFixed(0);
+  }
+
   if (value < 0.2) {
     return value.toFixed(3);
   }
@@ -17,7 +21,7 @@ function formatValue(value: number, unit?: string) {
 }
 
 function progressWidth(value: number, unit?: string) {
-  const normalized = unit === "%" ? value / 100 : value;
+  const normalized = unit === "%" || value > 1 ? value / 100 : value;
   return `${Math.min(Math.max(normalized, 0), 1) * 100}%`;
 }
 

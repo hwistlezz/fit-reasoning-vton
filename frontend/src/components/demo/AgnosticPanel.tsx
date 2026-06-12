@@ -4,29 +4,40 @@ import type { DemoAnalysis, DemoImageSet } from "@/lib/types";
 type AgnosticPanelProps = {
   images: DemoImageSet;
   analysis: DemoAnalysis;
+  fallbackText?: string;
 };
 
-export default function AgnosticPanel({ images, analysis }: AgnosticPanelProps) {
-  const cards = [
+type AgnosticCard = {
+  label: string;
+  alt: string;
+  src?: string;
+};
+
+export default function AgnosticPanel({
+  images,
+  analysis,
+  fallbackText,
+}: AgnosticPanelProps) {
+  const cards: AgnosticCard[] = [
     {
       label: "Agnostic Person",
-      alt: "Agnostic person representation",
+      alt: "Agnostic person static preview",
       src: images.agnostic,
     },
     {
-      label: "Agnostic Mask",
-      alt: "Agnostic mask representation",
-      src: images.agnostic_mask,
+      label: "Upper-body Mask",
+      alt: "Upper body mask static preview",
+      src: images.upper_body_mask ?? images.agnostic_mask,
     },
     {
-      label: "Image Parse",
-      alt: "Image parse placeholder",
-      src: undefined,
+      label: "Human Parsing Map",
+      alt: "Human parsing map static preview",
+      src: images.human_parsing_map,
     },
     {
       label: "Cloth Mask",
-      alt: "Cloth mask placeholder",
-      src: undefined,
+      alt: "Cloth mask static preview",
+      src: images.cloth_mask,
     },
   ];
 
@@ -41,6 +52,8 @@ export default function AgnosticPanel({ images, analysis }: AgnosticPanelProps) 
             <ImageWithFallback
               alt={card.alt}
               aspectClass="h-[200px]"
+              fallbackText={fallbackText}
+              imageClassName="object-contain bg-white"
               label={card.label}
               src={card.src}
             />

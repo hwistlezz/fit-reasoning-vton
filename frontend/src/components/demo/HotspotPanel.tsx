@@ -1,25 +1,29 @@
-import HotspotOverlay from "./HotspotOverlay";
 import ImageWithFallback from "./ImageWithFallback";
 import type { Hotspot } from "@/lib/types";
 
 type HotspotPanelProps = {
+  fallbackText?: string;
   imageSrc?: string;
   hotspots: Hotspot[];
 };
 
-export default function HotspotPanel({ imageSrc, hotspots }: HotspotPanelProps) {
+export default function HotspotPanel({
+  fallbackText,
+  imageSrc,
+  hotspots,
+}: HotspotPanelProps) {
   return (
     <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
       <div className="relative min-h-[420px] overflow-hidden rounded-2xl border border-[#6EA5FF]/20 bg-[#081426]/80">
         <ImageWithFallback
-          alt="Enhanced StableVITON result with hotspot overlay"
+          alt="Hotspot analysis static preview"
           aspectClass="h-full min-h-[420px]"
           className="border-0"
-          imageClassName="object-cover object-top"
-          label="Enhanced result"
+          fallbackText={fallbackText}
+          imageClassName="object-contain bg-white"
+          label="Hotspot"
           src={imageSrc}
         />
-        <HotspotOverlay hotspots={hotspots} />
       </div>
       <div className="grid h-full gap-3 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-4">
         {hotspots.map((hotspot) => (

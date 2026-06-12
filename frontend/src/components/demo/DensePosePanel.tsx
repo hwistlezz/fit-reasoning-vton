@@ -4,23 +4,34 @@ import type { DemoAnalysis, DemoImageSet } from "@/lib/types";
 type DensePosePanelProps = {
   images: DemoImageSet;
   analysis: DemoAnalysis;
+  fallbackText?: string;
 };
 
-export default function DensePosePanel({ images, analysis }: DensePosePanelProps) {
-  const cards = [
+type DensePoseCard = {
+  label: string;
+  alt: string;
+  src?: string;
+};
+
+export default function DensePosePanel({
+  images,
+  analysis,
+  fallbackText,
+}: DensePosePanelProps) {
+  const cards: DensePoseCard[] = [
     {
       label: "DensePose",
-      alt: "DensePose input preview",
+      alt: "DensePose static preview",
       src: images.densepose,
     },
     {
       label: "Skeleton Preview",
-      alt: "OpenPose skeleton preview",
+      alt: "OpenPose skeleton preview static image",
       src: images.skeleton_preview,
     },
     {
       label: "Enhanced Result",
-      alt: "Agnostic + DensePose enhanced result preview",
+      alt: "Enhanced StableVITON result preview",
       src: images.enhanced_result,
     },
   ];
@@ -36,6 +47,8 @@ export default function DensePosePanel({ images, analysis }: DensePosePanelProps
             <ImageWithFallback
               alt={card.alt}
               aspectClass="h-[220px]"
+              fallbackText={fallbackText}
+              imageClassName="object-contain bg-white"
               label={card.label}
               src={card.src}
             />

@@ -29,10 +29,17 @@ export type DemoImageSet = {
   target_worn: string;
   stableviton: string;
   enhanced_result: string;
+  hotspot?: string;
+  skeleton?: string;
   agnostic?: string;
   agnostic_mask?: string;
+  upper_body_mask?: string;
   densepose?: string;
   skeleton_preview?: string;
+  human_parsing_map?: string;
+  cloth_mask?: string;
+  densepose_overlay?: string;
+  agnostic_overlay?: string;
 };
 
 export type DemoMetric = {

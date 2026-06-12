@@ -4,7 +4,7 @@ import ComparePageClient from "@/components/demo/ComparePageClient";
 export default function ModelComparePage() {
   return (
     <Suspense fallback={<PageFallback />}>
-      <ComparePageClient />
+      <ComparePageClient localDemo />
     </Suspense>
   );
 }
