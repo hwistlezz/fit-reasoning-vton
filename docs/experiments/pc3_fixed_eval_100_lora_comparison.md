@@ -187,9 +187,26 @@ person | cloth | target/worn | baseline | rank4-module8 | rank8-module8 | rank8-
 D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\contact_sheet\fixed_eval_100_sample20_contact_sheet.jpg
 ```
 
+리뷰용 2x contact sheet:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\contact_sheet\fixed_eval_100_sample20_contact_sheet_2x.jpg
+```
+
 contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 않았다. 보정된 contact sheet에서 person / target 방향 오류는 사라졌다.
 
-## 8. Best adapter 후보
+## 8. Visual review notes
+
+2x contact sheet 기준으로 다음을 확인했다.
+
+- 기존 문제였던 왼쪽 회전 입력은 해결됐다. `EP00000002`의 person / target도 upright 상태로 표시된다.
+- contact sheet downscale만의 문제가 아니라, 생성 이미지 자체에도 384x512 수준의 blur와 garment artifact가 남아 있다.
+- baseline StableVITON은 여러 pair에서 body shape과 scene consistency를 상대적으로 안정적으로 유지한다.
+- LoRA adapter는 일부 pair에서 target garment 색상이나 형태를 더 강하게 반영하지만, 직사각형 cloth ghost, floating garment patch, sleeve/body boundary distortion이 함께 나타난다.
+- rank8-module16은 PSNR/SSIM이 가장 높지만, `EP00000002`, `EP00001488`, `EP00002069` 같은 케이스에서 haze / smoky texture / side artifact가 눈에 띈다.
+- `EP00000044`, `EP00001295`처럼 LoRA가 garment color를 더 반영하는 케이스도 있으므로, 최종 demo 후보는 metric top만 보지 말고 pair별 visual pass/fail로 골라야 한다.
+
+## 9. Best adapter 후보
 
 이번 100-pair 정량 평가 기준:
 
@@ -199,18 +216,20 @@ contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 
 
 EXIF orientation 보정 후 fixed_eval_100의 정량 지표 기준 best adapter 후보는 **rank8-module16**이다.
 
-다만 이전 10-pair qualitative ablation에서는 rank8-module16이 일부 pair에서 texture artifact가 더 눈에 띈다는 관찰이 있었다. 최종 demo model을 고르려면 fixed_eval_100 contact sheet를 기준으로 사람 검수 visual review를 함께 수행해야 한다.
+다만 high-resolution contact sheet 기준 visual review에서는 rank8-module16이 일부 pair에서 texture artifact와 side ghost를 더 크게 만들었다. 따라서 최종 demo model 후보는 **metric 기준 rank8-module16**, **visual stability 기준 baseline 또는 rank8-module8 재검토**로 나누어 판단한다.
 
-## 9. 다음 단계
+## 10. 다음 단계
 
 - 보정된 fixed_eval_100 contact sheet를 사람 기준으로 review한다.
 - rank8-module16과 rank8-module8의 visual failure case를 pair별로 분류한다.
+- demo 후보 pair를 success / usable / fail로 태깅한다.
+- 품질이 좋은 pair에서 baseline / rank4 / rank8-module8 / rank8-module16 crop을 비교한다.
 - LPIPS 또는 perceptual metric 환경을 별도로 준비해 재평가한다.
 - demo에 사용할 pair 3-5개를 fixed_eval_100에서 선별한다.
 - selected result만 `backend/demo/assets/**`에 배치하고 `validate_demo_assets.py --strict`를 실행한다.
 - README에는 fixed_eval_100의 요약 결과만 유지하고 raw output은 Git에 포함하지 않는다.
 
-## 10. Git safety
+## 11. Git safety
 
 Git 포함 대상:
 

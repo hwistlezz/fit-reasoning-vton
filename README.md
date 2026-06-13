@@ -973,7 +973,7 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 | rank8-module8 | 100 | 0 | 1.0 | 18.874149 | 0.635203 |
 | rank8-module16 | 100 | 0 | 1.0 | 18.964847 | 0.636894 |
 
-LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. EXIF 보정 후 PSNR/SSIM 기준으로는 `rank8-module16`이 가장 높지만, pixel-level metric과 visual quality가 항상 일치하지 않으므로 representative contact sheet 기반 human review가 필요합니다.
+LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. EXIF 보정 후 PSNR/SSIM 기준으로는 `rank8-module16`이 가장 높지만, 2x contact sheet 기준 visual review에서는 일부 pair에서 haze, side ghost, floating garment patch가 보였습니다. 따라서 최종 demo 후보는 metric top만으로 고르지 않고 pair별 visual pass/fail을 함께 봐야 합니다.
 
 Generated output, raw metric CSV/JSON, contact sheet image, adapter file은 모두 `backend/training/outputs/**` 하위 local path에만 저장했고 Git에는 포함하지 않았습니다.
 

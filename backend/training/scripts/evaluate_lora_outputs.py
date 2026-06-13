@@ -40,6 +40,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-json", default=None)
     parser.add_argument("--raw-csv", default=None)
     parser.add_argument("--contact-sheet", default=None)
+    parser.add_argument("--tile-width", type=int, default=128)
+    parser.add_argument("--tile-height", type=int, default=171)
+    parser.add_argument("--label-height", type=int, default=20)
     parser.add_argument("--skip-lpips", action="store_true")
     return parser.parse_args()
 
@@ -216,6 +219,9 @@ def make_contact_sheet(
     pairs: list[tuple[str, str]],
     contact_sheet_path: Path,
     sample_count: int,
+    tile_width: int,
+    tile_height: int,
+    label_height: int,
 ) -> None:
     rows = pairs[:sample_count]
     columns = [
@@ -227,8 +233,8 @@ def make_contact_sheet(
         ("rank8-m8", output_root / "rank8_module8" / "lora" / "pair"),
         ("rank8-m16", output_root / "rank8_module16" / "lora" / "pair"),
     ]
-    tile_w, tile_h = 128, 171
-    label_h = 20
+    tile_w, tile_h = tile_width, tile_height
+    label_h = label_height
     sheet = Image.new("RGB", (tile_w * len(columns), (tile_h + label_h) * (len(rows) + 1)), "white")
     draw = ImageDraw.Draw(sheet)
     for col_idx, (label, _) in enumerate(columns):
@@ -278,7 +284,16 @@ def main() -> int:
     pairs = read_pairs(eval_root / "test_pairs.txt")
     lpips_bundle, lpips_skip_reason = maybe_lpips_model(args.skip_lpips)
     methods, raw_rows = evaluate(eval_root, output_root, pairs, lpips_bundle)
-    make_contact_sheet(eval_root, output_root, pairs, contact_sheet_path, args.sample_count)
+    make_contact_sheet(
+        eval_root,
+        output_root,
+        pairs,
+        contact_sheet_path,
+        args.sample_count,
+        tile_width=args.tile_width,
+        tile_height=args.tile_height,
+        label_height=args.label_height,
+    )
     write_raw_csv(raw_csv_path, raw_rows)
 
     summary: dict[str, Any] = {
@@ -290,6 +305,7 @@ def main() -> int:
         "lpips_skip_reason": lpips_skip_reason,
         "raw_csv": str(raw_csv_path),
         "contact_sheet": str(contact_sheet_path),
+        "contact_sheet_tile_size": [args.tile_width, args.tile_height],
     }
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
