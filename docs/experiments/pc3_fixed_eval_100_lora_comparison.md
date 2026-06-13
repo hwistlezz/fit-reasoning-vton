@@ -206,7 +206,60 @@ contact sheet 이미지 파일은 generated output이므로 Git에 포함하지 
 - rank8-module16은 PSNR/SSIM이 가장 높지만, `EP00000002`, `EP00001488`, `EP00002069` 같은 케이스에서 haze / smoky texture / side artifact가 눈에 띈다.
 - `EP00000044`, `EP00001295`처럼 LoRA가 garment color를 더 반영하는 케이스도 있으므로, 최종 demo 후보는 metric top만 보지 말고 pair별 visual pass/fail로 골라야 한다.
 
-## 9. Best adapter 후보
+## 9. Metric-based demo candidate triage
+
+fixed_eval_100 전체를 사람이 모두 다시 확인하기 전에, PSNR/SSIM 기준으로 review 우선순위를 줄이기 위한 candidate triage helper를 추가했다.
+
+사용 스크립트:
+
+```text
+backend/training/scripts/select_lora_demo_candidates.py
+```
+
+생성된 local output:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\candidate_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\candidate_review.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\candidate_top20_sheet.jpg
+```
+
+위 파일들은 모두 generated review output이므로 Git에 포함하지 않았다.
+
+bucket 기준:
+
+- success: `best_psnr >= 20.0` and `best_ssim >= 0.78`
+- usable: `best_psnr >= 18.0` and `best_ssim >= 0.62`
+- fail: 위 조건을 만족하지 않는 pair
+
+bucket 결과:
+
+| Bucket | Count |
+| --- | ---: |
+| success | 15 |
+| usable | 39 |
+| fail | 46 |
+
+metric 기준 top candidate:
+
+| Rank | pair_id | bucket | best_method | best_psnr | best_ssim | note |
+| ---: | --- | --- | --- | ---: | ---: | --- |
+| 1 | EP00027284 | success | rank8-module8 | 23.984209 | 0.916651 | baseline도 매우 근접 |
+| 2 | EP00025167 | success | rank4-module8 | 23.684650 | 0.898280 | visual artifact가 커서 데모 후보로는 부적합 |
+| 3 | EP00000811 | success | baseline | 23.007033 | 0.893081 | baseline이 가장 안정적인 예시 |
+| 4 | EP00002370 | success | baseline | 21.519420 | 0.886144 | LoRA artifact 확인 필요 |
+| 5 | EP00001115 | success | baseline | 21.066556 | 0.852769 | side ghost 확인 필요 |
+| 6 | EP00026074 | success | rank4-module8 | 20.556454 | 0.847747 | rectangular artifact 확인 필요 |
+| 7 | EP00005999 | success | baseline | 20.680618 | 0.839535 | LoRA가 garment를 약화시키는 경향 |
+| 8 | EP00002147 | success | rank8-module8 | 20.972156 | 0.833724 | visual quality는 낮음 |
+| 9 | EP00025819 | success | baseline | 21.838969 | 0.829924 | 상대적으로 usable 후보 |
+| 10 | EP00001551 | success | rank8-module16 | 20.512939 | 0.819652 | 추가 crop review 필요 |
+
+top20 contact sheet를 확인한 결과, metric bucket이 success여도 visual quality가 충분히 좋은 것은 아니었다. 특히 `EP00025167`, `EP00003306`처럼 PSNR/SSIM은 높지만 target garment가 잘 보존되지 않거나 ghost artifact가 큰 케이스가 있었다. 반대로 `EP00025819`, `EP00001551`, `EP00000471`, `EP00001295`는 추가 crop review 대상으로 남길 수 있지만, 현재 단계에서 최종 demo pair로 확정하지는 않는다.
+
+따라서 candidate triage 결과는 **최종 데모 선택 결과가 아니라 사람이 볼 pair의 우선순위 목록**으로만 사용한다.
+
+## 10. Best adapter 후보
 
 이번 100-pair 정량 평가 기준:
 
@@ -218,23 +271,24 @@ EXIF orientation 보정 후 fixed_eval_100의 정량 지표 기준 best adapter 
 
 다만 high-resolution contact sheet 기준 visual review에서는 rank8-module16이 일부 pair에서 texture artifact와 side ghost를 더 크게 만들었다. 따라서 최종 demo model 후보는 **metric 기준 rank8-module16**, **visual stability 기준 baseline 또는 rank8-module8 재검토**로 나누어 판단한다.
 
-## 10. 다음 단계
+## 11. 다음 단계
 
-- 보정된 fixed_eval_100 contact sheet를 사람 기준으로 review한다.
+- `candidate_review.csv`에 사람이 직접 visual_tag와 review_note를 채운다.
+- top20 candidate sheet에서 usable 후보를 3-5개로 좁힌다.
 - rank8-module16과 rank8-module8의 visual failure case를 pair별로 분류한다.
-- demo 후보 pair를 success / usable / fail로 태깅한다.
 - 품질이 좋은 pair에서 baseline / rank4 / rank8-module8 / rank8-module16 crop을 비교한다.
 - LPIPS 또는 perceptual metric 환경을 별도로 준비해 재평가한다.
 - demo에 사용할 pair 3-5개를 fixed_eval_100에서 선별한다.
 - selected result만 `backend/demo/assets/**`에 배치하고 `validate_demo_assets.py --strict`를 실행한다.
 - README에는 fixed_eval_100의 요약 결과만 유지하고 raw output은 Git에 포함하지 않는다.
 
-## 11. Git safety
+## 12. Git safety
 
 Git 포함 대상:
 
 - `backend/training/scripts/build_fixed_eval_set.py`
 - `backend/training/scripts/evaluate_lora_outputs.py`
+- `backend/training/scripts/select_lora_demo_candidates.py`
 - `docs/experiments/pc3_fixed_eval_100_lora_comparison.md`
 - `README.md`
 

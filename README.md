@@ -975,6 +975,16 @@ Contact sheet 기준 정성 확인에서는 rank8-module16이 일부 pair에서 
 
 LPIPS는 현재 PC3 `vton` 환경에 설치되어 있지 않아 skip했습니다. EXIF 보정 후 PSNR/SSIM 기준으로는 `rank8-module16`이 가장 높지만, 2x contact sheet 기준 visual review에서는 일부 pair에서 haze, side ghost, floating garment patch가 보였습니다. 따라서 최종 demo 후보는 metric top만으로 고르지 않고 pair별 visual pass/fail을 함께 봐야 합니다.
 
+후속으로 PSNR/SSIM 기반 demo candidate triage를 수행해 100개 pair를 `success / usable / fail` bucket으로 분류했습니다. 이 분류는 최종 데모 선택이 아니라 사람이 검토할 우선순위를 줄이기 위한 보조 결과입니다.
+
+| Bucket | Count |
+| --- | ---: |
+| success | 15 |
+| usable | 39 |
+| fail | 46 |
+
+top20 candidate sheet를 눈으로 확인한 결과, metric success pair 중에서도 garment ghost, haze, floating patch가 남는 경우가 있었습니다. 현재 단계에서는 `rank8-module16`이 정량 지표상 best candidate이지만, 실제 데모 pair는 `candidate_review.csv`에 수동 visual tag를 채운 뒤 3-5개만 선별하는 방식이 적절합니다.
+
 Generated output, raw metric CSV/JSON, contact sheet image, adapter file은 모두 `backend/training/outputs/**` 하위 local path에만 저장했고 Git에는 포함하지 않았습니다.
 
 상세 기록: [fixed 100-pair LoRA comparison](docs/experiments/pc3_fixed_eval_100_lora_comparison.md)
@@ -996,6 +1006,7 @@ Generated output, raw metric CSV/JSON, contact sheet image, adapter file은 모�
 - Baseline StableVITON vs LoRA generated image comparison
 - LoRA rank/module ablation training
 - fixed_eval_100 4-method inference comparison
+- fixed_eval_100 metric-based demo candidate triage
 - 10-pair baseline/rank4/rank8 inference comparison
 - Final demo video in README
 
@@ -1155,9 +1166,11 @@ Git에는 source code, schema, script, 문서, 작은 예시 JSON만 포함하�
 - Dataset과 output artifact는 용량 및 라이선스 문제로 Git에 포함하지 않습니다.
 - Demo pair quality score는 특정 입력 쌍에 대한 UI-level 비교 결과이며, 전체 test set에 대한 정량 benchmark는 아직 수행하지 않았습니다.
 - 현재 화면의 fit/reliability score는 demo comparison을 설명하기 위한 지표이므로, 모델의 일반적인 성능 개선을 주장하려면 더 많은 pair에 대한 반복 평가가 필요합니다.
+- fixed_eval_100에서는 PSNR/SSIM 기준 후보 추출까지 완료했지만, 최종 발표용 pair는 아직 사람 기준 visual review와 crop 비교가 필요합니다.
 
 ## 🛣️ 향후 작업
 
+- `candidate_review.csv`에 수동 visual tag를 채워 최종 demo pair 3-5개 선별
 - 동일 person-cloth pair 기준 StableVITON, IDM-VTON, CATVITON/CATVTON 비교
 - StableVITON baseline, StableVITON+LoRA, IDM-VTON, CATVITON/CATVTON 정성 비교표 작성
 - 의류 경계, pose alignment, body distortion, failure case 분석
