@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import csv
 import json
 from pathlib import Path
@@ -15,10 +16,13 @@ PERSON_SPACE_FOLDERS = {
     "worn",
     "fit",
     "image-parse",
-    "cloth-mask",
     "image-densepose",
     "agnostic-v3.2",
     "agnostic-mask",
+}
+CLOTH_SPACE_FOLDERS = {
+    "cloth",
+    "cloth-mask",
 }
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 MASK_EXTS = (".png", ".jpg", ".jpeg")
@@ -72,6 +76,17 @@ def find_artifact(root: Path, folder: str, pair_id: str, split: str | None) -> P
     return None
 
 
+def find_fit_json(root: Path, pair_id: str, split: str | None) -> Path | None:
+    roots = [root / "fit"]
+    for alias in split_aliases(split):
+        roots.append(root / alias / "fit")
+    for base in roots:
+        path = base / f"{pair_id}.json"
+        if path.exists():
+            return path
+    return None
+
+
 def load_image(path: Path) -> tuple[tuple[int, int] | None, str | None, Image.Image | None]:
     try:
         with Image.open(path) as image:
@@ -83,34 +98,56 @@ def load_image(path: Path) -> tuple[tuple[int, int] | None, str | None, Image.Im
 
 def count_unique_labels(image: Image.Image, max_labels: int = 512) -> int:
     gray = image.convert("L")
-    labels = set(gray.getdata())
-    if len(labels) > max_labels:
-        return len(labels)
-    return len(labels)
+    del max_labels
+    return sum(1 for count in gray.histogram() if count)
 
 
 def nonzero_pixels(image: Image.Image) -> int:
     gray = image.convert("L")
-    return sum(1 for value in gray.getdata() if value != 0)
+    return sum(gray.histogram()[1:])
 
 
-def openpose_valid_keypoints(path: Path, min_confidence: float) -> tuple[int, str | None]:
+def openpose_keypoint_stats(
+    path: Path,
+    min_confidence: float,
+    image_size: tuple[int, int] | None,
+) -> tuple[int, int, str | None]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         people = data.get("people") or []
         if not people:
-            return 0, None
+            return 0, 0, None
         values = people[0].get("pose_keypoints_2d") or people[0].get("keypoints") or []
         count = 0
+        out_of_bounds = 0
+        width, height = image_size or (None, None)
         for index in range(2, len(values), 3):
             try:
-                if float(values[index]) >= min_confidence:
-                    count += 1
+                confidence = float(values[index])
             except Exception:
                 continue
-        return count, None
+            if confidence < min_confidence:
+                continue
+            count += 1
+            if width is None or height is None:
+                continue
+            try:
+                x = float(values[index - 2])
+                y = float(values[index - 1])
+            except Exception:
+                continue
+            if not (0 <= x <= width and 0 <= y <= height):
+                out_of_bounds += 1
+        return count, out_of_bounds, None
     except Exception as exc:
-        return 0, str(exc)
+        return 0, 0, str(exc)
+
+
+def load_fit_json(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8")), None
+    except Exception as exc:
+        return None, str(exc)
 
 
 def manifest_pair_ids(path: Path) -> list[str]:
@@ -146,6 +183,35 @@ def row_required_folders(args: argparse.Namespace) -> list[str]:
     return folders
 
 
+def select_rows(rows: list[dict[str, str]], args: argparse.Namespace) -> list[dict[str, str]]:
+    if not args.limit:
+        return rows
+
+    forced_pair_ids = [normalize_pair_id(value) for value in args.force_pair]
+    rows_by_pair_id = {
+        normalize_pair_id(row.get("pair_id")): row
+        for row in rows
+        if normalize_pair_id(row.get("pair_id"))
+    }
+    selected: list[dict[str, str]] = []
+    selected_pair_ids: set[str] = set()
+    for pair_id in forced_pair_ids:
+        row = rows_by_pair_id.get(pair_id)
+        if row and pair_id not in selected_pair_ids:
+            selected.append(row)
+            selected_pair_ids.add(pair_id)
+
+    for row in rows:
+        if len(selected) >= args.limit:
+            break
+        pair_id = normalize_pair_id(row.get("pair_id"))
+        if pair_id in selected_pair_ids:
+            continue
+        selected.append(row)
+        selected_pair_ids.add(pair_id)
+    return selected
+
+
 def validate_row(
     row: dict[str, str],
     root: Path,
@@ -166,6 +232,10 @@ def validate_row(
     densepose_nonzero: int | None = None
     agnostic_mask_nonzero: int | None = None
     openpose_count: int | None = None
+    openpose_out_of_bounds: int | None = None
+    openpose_path: Path | None = None
+    fit_json_path: Path | None = None
+    fit_json_status: dict[str, Any] = {"exists": False}
 
     for folder in required_folders:
         path = find_artifact(root, folder, pair_id, split)
@@ -177,11 +247,7 @@ def validate_row(
             zero_byte.append(folder)
             continue
         if folder == "openpose-json":
-            openpose_count, error = openpose_valid_keypoints(path, min_confidence)
-            if error:
-                load_errors[folder] = error
-            elif openpose_count < min_keypoints:
-                errors.append(f"openpose_valid_keypoints<{min_keypoints}")
+            openpose_path = path
             continue
 
         size, error, image = load_image(path)
@@ -208,15 +274,65 @@ def validate_row(
             if agnostic_mask_nonzero <= 0:
                 errors.append("agnostic_mask_empty")
 
-    person_sizes = {folder: size for folder, size in sizes.items() if folder in PERSON_SPACE_FOLDERS}
-    if person_sizes:
-        reference_folder, reference_size = next(iter(person_sizes.items()))
-        for folder, size in person_sizes.items():
-            if size != reference_size:
-                errors.append(
-                    f"size_mismatch:{folder}={size[0]}x{size[1]} vs "
-                    f"{reference_folder}={reference_size[0]}x{reference_size[1]}"
+    image_size = sizes.get("image")
+    if openpose_path:
+        openpose_count, openpose_out_of_bounds, error = openpose_keypoint_stats(
+            openpose_path,
+            min_confidence,
+            image_size,
+        )
+        if error:
+            load_errors["openpose-json"] = error
+        elif openpose_count < min_keypoints:
+            errors.append(f"openpose_valid_keypoints<{min_keypoints}")
+        elif openpose_out_of_bounds:
+            errors.append("openpose_keypoints_out_of_image_bounds")
+
+    fit_json_path = find_fit_json(root, pair_id, split)
+    if fit_json_path:
+        fit_json_status = {"exists": True, "path": str(fit_json_path)}
+        if fit_json_path.stat().st_size == 0:
+            fit_json_status["zero_byte"] = True
+            errors.append("fit_json_zero_byte")
+        else:
+            payload, error = load_fit_json(fit_json_path)
+            if error:
+                fit_json_status["load_error"] = error
+                errors.append("fit_json_load_error")
+            else:
+                payload_pair_id = normalize_pair_id(str(payload.get("pair_id", ""))) if isinstance(payload, dict) else ""
+                fit_json_status["pair_id"] = payload_pair_id
+                if payload_pair_id and payload_pair_id != pair_id:
+                    errors.append("fit_json_pair_id_mismatch")
+
+    person_space_size_errors: list[str] = []
+    cloth_space_size_errors: list[str] = []
+    if image_size:
+        for folder in sorted(PERSON_SPACE_FOLDERS):
+            size = sizes.get(folder)
+            if not size:
+                continue
+            if size != image_size:
+                message = (
+                    f"person_space_size_mismatch:{folder}={size[0]}x{size[1]} vs "
+                    f"image={image_size[0]}x{image_size[1]}"
                 )
+                person_space_size_errors.append(message)
+                errors.append(message)
+
+    cloth_size = sizes.get("cloth")
+    if cloth_size:
+        for folder in sorted(CLOTH_SPACE_FOLDERS):
+            size = sizes.get(folder)
+            if not size:
+                continue
+            if size != cloth_size:
+                message = (
+                    f"cloth_space_size_mismatch:{folder}={size[0]}x{size[1]} vs "
+                    f"cloth={cloth_size[0]}x{cloth_size[1]}"
+                )
+                cloth_space_size_errors.append(message)
+                errors.append(message)
 
     if missing:
         errors.append("missing_required_file")
@@ -233,11 +349,15 @@ def validate_row(
         "zero_byte_files": zero_byte,
         "image_load_errors": load_errors,
         "width_height": {key: f"{value[0]}x{value[1]}" for key, value in sizes.items()},
+        "person_space_size_errors": person_space_size_errors,
+        "cloth_space_size_errors": cloth_space_size_errors,
         "openpose_valid_keypoints": openpose_count,
+        "openpose_out_of_bounds_keypoints": openpose_out_of_bounds,
         "image_parse_unique_labels": parse_unique_labels,
         "cloth_mask_nonzero_pixels": cloth_mask_nonzero,
         "densepose_nonzero_pixels": densepose_nonzero,
         "agnostic_mask_nonzero_pixels": agnostic_mask_nonzero,
+        "fit_json": fit_json_status,
         "artifact_paths": artifact_paths,
         "reason": ";".join(errors),
     }
@@ -257,8 +377,11 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     rows, fields = read_csv(metadata)
+    source_row_count = len(rows)
+    rows = select_rows(rows, args)
     pair_ids = [normalize_pair_id(row.get("pair_id")) for row in rows]
-    duplicate_pair_ids = sorted({pair_id for pair_id in pair_ids if pair_ids.count(pair_id) > 1})
+    pair_id_counts = Counter(pair_ids)
+    duplicate_pair_ids = sorted(pair_id for pair_id, count in pair_id_counts.items() if count > 1)
     required = row_required_folders(args)
 
     details: list[dict[str, Any]] = []
@@ -281,8 +404,10 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
             if manifest_row:
                 manifest_rows.append(manifest_row)
 
-    input_manifest = Path(args.input_manifest) if args.input_manifest else root / "manifest.jsonl"
-    manifest_check = validate_manifest(input_manifest if input_manifest.exists() else None, pair_ids)
+    input_manifest = Path(args.input_manifest) if args.input_manifest else None
+    if input_manifest is None and args.limit is None:
+        input_manifest = root / "manifest.jsonl"
+    manifest_check = validate_manifest(input_manifest if input_manifest and input_manifest.exists() else None, pair_ids)
     generated_manifest_pair_ids = [item["pair_id"] for item in manifest_rows]
     generated_manifest_check = {
         "line_count": len(generated_manifest_pair_ids),
@@ -293,6 +418,15 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
 
     if duplicate_pair_ids:
         bad_rows.extend({"pair_id": pair_id, "reason": "duplicate_pair_id"} for pair_id in duplicate_pair_ids)
+
+    person_space_size_error_count = sum(
+        len(detail.get("person_space_size_errors") or [])
+        for detail in details
+    )
+    cloth_space_size_error_count = sum(
+        len(detail.get("cloth_space_size_errors") or [])
+        for detail in details
+    )
 
     details_path = output_dir / "validation_details.jsonl"
     with details_path.open("w", encoding="utf-8") as f:
@@ -309,9 +443,14 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
         "metadata": str(metadata),
         "artifact_root": str(root),
         "required_folders": required,
+        "source_row_count": source_row_count,
+        "limit": args.limit,
+        "forced_pairs": [normalize_pair_id(value) for value in args.force_pair],
         "row_count": len(rows),
         "ok_count": len(final_rows),
         "failed_count": len(bad_rows),
+        "person_space_size_errors": person_space_size_error_count,
+        "cloth_space_size_errors": cloth_space_size_error_count,
         "duplicate_pair_ids": duplicate_pair_ids,
         "input_manifest_check": manifest_check,
         "generated_manifest_check": generated_manifest_check,
@@ -338,6 +477,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-manifest")
     parser.add_argument("--required-densepose", action="store_true")
     parser.add_argument("--required-agnostic", action="store_true")
+    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--force-pair", action="append", default=[])
     parser.add_argument("--min-openpose-keypoints", type=int, default=5)
     parser.add_argument("--min-openpose-confidence", type=float, default=0.05)
     return parser.parse_args()
