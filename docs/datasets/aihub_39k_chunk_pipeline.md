@@ -122,6 +122,30 @@ python scripts\validate_stableviton_orientation.py `
 
 This check fails the chunk when `image`, `cloth`, or `worn` still depend on EXIF orientation metadata, when person-space artifacts disagree on raw width/height, or when OpenPose keypoints fall outside the saved image coordinate system. The package helper expects `orientation_sanity_report.json` to be present and passed unless `--skip-orientation-sanity` is explicitly used for local debugging.
 
+## Step 3.6: Validate Agnostic Semantic Coverage
+
+Run this gate after regenerating `agnostic-v3.2` / `agnostic-mask` and before packaging:
+
+```powershell
+python scripts\diagnose_agnostic_mask_semantics.py `
+  --metadata D:\fit_transfer\reports\chunks\chunk_000\metadata_chunk_final.csv `
+  --artifact-root-before C:\fit_transfer\work_39k_chunks\chunk_000 `
+  --artifact-root-after D:\fit_transfer\reports\agnostic_mask_rule_v2_smoke\artifact_after `
+  --output-dir D:\fit_transfer\reports\agnostic_mask_rule_v2_smoke `
+  --limit 100 `
+  --force-pair EP00000002
+```
+
+The package decision should explicitly reference:
+
+```text
+D:\fit_transfer\reports\agnostic_mask_rule_v2_smoke\summary.json
+D:\fit_transfer\reports\agnostic_mask_rule_v2_smoke\mask_ratio_before_after.csv
+D:\fit_transfer\reports\agnostic_mask_rule_v2_smoke\contact_agnostic_before_after.jpg
+```
+
+For top/outer garments, the target `agnostic-mask` ratio is `0.12` to `0.28`. Masks below `0.10` are suspicious, and masks above `0.40` are suspicious. If this semantic gate fails, do not package or transfer the chunk even when strict file validation passes.
+
 ## Step 4: Make Contact Sheets
 
 ```powershell
