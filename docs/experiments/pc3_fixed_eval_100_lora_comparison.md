@@ -302,3 +302,67 @@ Git 미포함 대상:
 - raw metric `*.csv`
 - raw summary `*.json`
 - logs
+
+## 13. Post-hoc layout alignment audit
+
+Visual review after the EXIF fix showed that person/target orientation was corrected, but the generated try-on images still had weak garment transfer, transparent-looking clothing, haze, and ghost artifacts. This means the issue is not only contact sheet downscaling or EXIF rotation.
+
+To isolate the cause, an additional alignment audit was run with:
+
+```text
+backend/training/scripts/audit_stableviton_layout_alignment.py
+```
+
+Local generated outputs:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\layout_alignment_audit_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\layout_alignment_audit.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\layout_alignment_audit_sheet.jpg
+```
+
+These files are generated diagnostics and are not included in Git.
+
+Audit result:
+
+| Metric | Value |
+| --- | ---: |
+| pair_count | 100 |
+| agnostic_closer_to_source_count | 100 |
+| agnostic_closer_to_target_count | 0 |
+| agnostic_closer_to_source_rate | 1.0 |
+| mean_agnostic_mse_to_source_keep_region | 1.407416 |
+| mean_agnostic_mse_to_target_keep_region | 725.883881 |
+| mean_mask_region_ratio | 0.049859 |
+| mean_source_target_mse | 995.159544 |
+
+The audit confirms that the prepared `agnostic-v3.2` artifacts are aligned with the source `image/person`, not with the `worn/target` image. StableVITON config uses:
+
+```text
+first_stage_key: image
+first_stage_key_cond: ["agn", "agn_mask", "image_densepose"]
+cond_stage_key: cloth
+```
+
+Therefore, the current layout is suitable for pipeline compatibility testing, but it is not a fully correct StableVITON training target layout for learning target worn reconstruction. In the current layout:
+
+```text
+image/ = source person image
+worn/  = target worn image
+```
+
+StableVITON training reads `image/` as the first-stage image, while `worn/` is not consumed by the original dataset class. This likely explains why LoRA training succeeded technically but did not produce reliable garment transfer quality.
+
+Conclusion:
+
+- The fixed_eval_100 results should be treated as a pipeline and adapter-loading evaluation, not as final model quality evidence.
+- The current rank8-module16 adapter can score slightly higher on PSNR/SSIM, but visual quality is not reliably better.
+- Additional LoRA training on the same layout is not the right next step.
+- A corrected StableVITON training layout must be prepared where the training `image/` field and its agnostic/densepose/parsing/openpose artifacts are generated from the same target worn image.
+
+Recommended next step:
+
+1. Rebuild a tiny target-aligned StableVITON layout where `image/` is based on `worn/target`.
+2. Generate target-side agnostic, agnostic-mask, DensePose, parsing, and pose artifacts for that same target image.
+3. Run a 1-step / 100-step LoRA smoke on the corrected tiny layout.
+4. Only after this passes, rebuild the 10k training layout and retrain the adapter.
