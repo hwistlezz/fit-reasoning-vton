@@ -366,3 +366,59 @@ Recommended next step:
 2. Generate target-side agnostic, agnostic-mask, DensePose, parsing, and pose artifacts for that same target image.
 3. Run a 1-step / 100-step LoRA smoke on the corrected tiny layout.
 4. Only after this passes, rebuild the 10k training layout and retrain the adapter.
+
+## 14. Target-aligned readiness check
+
+The next diagnostic step was to check whether the current raw AIHub artifact dataset already contains target-side conditioning artifacts for `worn/target` images. This was checked with:
+
+```text
+backend/training/scripts/audit_target_aligned_stableviton_readiness.py
+```
+
+Local generated outputs:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\target_aligned_readiness_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\target_aligned_readiness.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review\target_aligned_readiness_sheet.jpg
+```
+
+These files are generated diagnostics and are not included in Git.
+
+Readiness result on the first 100 manifest pairs:
+
+| Metric | Value |
+| --- | ---: |
+| checked_count | 100 |
+| source_artifacts_ready_count | 100 |
+| target_artifacts_ready_count | 0 |
+| target_artifacts_not_ready_count | 100 |
+| missing target agnostic | 100 |
+| missing target agnostic mask | 100 |
+| missing target DensePose | 100 |
+| missing target human parsing | 100 |
+| missing target OpenPose JSON | 100 |
+| source_agnostic_closer_to_source_rate | 1.0 |
+| mean_source_agnostic_mse_to_source_keep_region | 0.613779 |
+| mean_source_agnostic_mse_to_target_keep_region | 757.604477 |
+| can_build_correct_target_training_layout | false |
+
+Interpretation:
+
+- `worn/{pair_id}.jpg` exists and can be used as the target image candidate.
+- Target-side `agnostic-v3.2`, `agnostic-mask`, `image-densepose`, `image-parse`, and `openpose-json` do not exist in the current dataset.
+- Existing source-side artifacts are complete, but they are aligned with `image/{pair_id}.jpg`, not `worn/{pair_id}.jpg`.
+- Reusing source-side artifacts after simply replacing `image/` with `worn/` would create a mismatched training sample.
+
+Therefore, the correct next data step is not another LoRA training run. The dataset needs a target-side artifact generation pass first:
+
+```text
+worn/{pair_id}.jpg
+  -> target-agnostic-v3.2/{pair_id}.jpg
+  -> target-agnostic-mask/{pair_id}_mask.png
+  -> target-image-densepose/{pair_id}.jpg
+  -> target-image-parse/{pair_id}.png
+  -> target-openpose-json/{pair_id}_keypoints.json
+```
+
+After this target-side artifact patch is available, a tiny target-aligned StableVITON layout can be prepared and tested before any full 10k retraining.
