@@ -422,3 +422,62 @@ worn/{pair_id}.jpg
 ```
 
 After this target-side artifact patch is available, a tiny target-aligned StableVITON layout can be prepared and tested before any full 10k retraining.
+
+## 15. Target-aligned layout builder dry-run
+
+To make the next data patch immediately testable, a target-aligned layout builder was added:
+
+```text
+backend/training/scripts/prepare_target_aligned_stableviton_layout.py
+```
+
+This builder maps `worn/{pair_id}.jpg` into StableVITON's training `image/{pair_id}.jpg` field and requires target-side conditioning artifacts. It does **not** reuse source-side agnostic / DensePose / parsing / OpenPose artifacts as fallback.
+
+Dry-run command:
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\prepare_target_aligned_stableviton_layout.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\lora_pilot_aihub_10k_agnostic_v3_full `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_target_aligned_layout_tiny100 `
+  --limit 100 `
+  --mode dry-run `
+  --summary-json D:\GitHub\fit-reasoning-vton\backend\training\outputs\target_aligned_layout_prepare\summary.json
+```
+
+Dry-run result:
+
+| Metric | Value |
+| --- | ---: |
+| total_manifest | 9995 |
+| selected_count | 100 |
+| train_count | 90 |
+| test_count | 10 |
+| ready_count | 0 |
+| not_ready_count | 100 |
+| missing target agnostic-v3.2 | 100 |
+| missing target agnostic-mask | 100 |
+| missing target image-densepose | 100 |
+| missing target image-parse | 100 |
+| missing target openpose-json | 100 |
+
+The builder is ready for the future target-side artifact patch. Once the patch exists, the expected copy command is:
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\prepare_target_aligned_stableviton_layout.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\lora_pilot_aihub_10k_agnostic_v3_full `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\datasets\stableviton_aihub_10k_target_aligned_layout_tiny100 `
+  --limit 100 `
+  --mode copy `
+  --allow-gt-cloth-warped-mask-from-cloth-mask `
+  --summary-json D:\GitHub\fit-reasoning-vton\backend\training\outputs\target_aligned_layout_prepare_tiny100\summary.json
+```
+
+Success criterion for the future patch:
+
+```text
+ready_count=100
+not_ready_count=0
+missing_required_counts for target-side artifacts = 0
+```
+
+Only after that should a target-aligned 1-step / 100-step LoRA smoke be run.
