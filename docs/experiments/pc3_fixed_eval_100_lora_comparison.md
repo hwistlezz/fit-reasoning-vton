@@ -481,3 +481,95 @@ missing_required_counts for target-side artifacts = 0
 ```
 
 Only after that should a target-aligned 1-step / 100-step LoRA smoke be run.
+
+## 16. Target artifact patch manifest
+
+To hand off the required target-side preprocessing work, a patch manifest builder was added:
+
+```text
+backend/training/scripts/build_target_artifact_patch_manifest.py
+```
+
+This script does not generate images. It writes a JSONL contract that lists the target worn input and the expected target-side artifact outputs for each `pair_id`.
+
+Generated local files:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\target_artifact_patch\target_artifact_patch_manifest.jsonl
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\target_artifact_patch\target_artifact_patch_summary.json
+```
+
+These files are generated outputs and are not included in Git.
+
+Manifest row shape:
+
+```json
+{
+  "pair_id": "EP00000000",
+  "status": "needs_target_artifacts",
+  "inputs": {
+    "target_worn": "worn/EP00000000.jpg",
+    "cloth": "cloth/EP00000000.jpg",
+    "source_person": "image/EP00000000.jpg",
+    "cloth_mask": "cloth-mask/EP00000000.png"
+  },
+  "expected_outputs": {
+    "target_agnostic": "target-agnostic-v3.2/EP00000000.jpg",
+    "target_agnostic_mask": "target-agnostic-mask/EP00000000_mask.png",
+    "target_densepose": "target-image-densepose/EP00000000.jpg",
+    "target_parse": "target-image-parse/EP00000000.png",
+    "target_openpose_json": "target-openpose-json/EP00000000_keypoints.json"
+  },
+  "missing_inputs": [],
+  "existing_outputs": [],
+  "missing_outputs": [
+    "target_agnostic",
+    "target_agnostic_mask",
+    "target_densepose",
+    "target_parse",
+    "target_openpose_json"
+  ],
+  "notes": {
+    "target_training_image": "worn/EP00000000.jpg",
+    "source_side_artifacts_are_not_valid_fallback": true
+  }
+}
+```
+
+Full 9995-pair manifest summary:
+
+| Metric | Value |
+| --- | ---: |
+| total_manifest | 9995 |
+| selected_count | 9995 |
+| emitted_rows | 9995 |
+| input_ready_count | 9995 |
+| input_not_ready_count | 0 |
+| output_complete_count | 0 |
+| output_incomplete_count | 9995 |
+| missing target_agnostic | 9995 |
+| missing target_agnostic_mask | 9995 |
+| missing target_densepose | 9995 |
+| missing target_parse | 9995 |
+| missing target_openpose_json | 9995 |
+
+Expected target output directories:
+
+```text
+target-agnostic-v3.2/
+target-agnostic-mask/
+target-image-densepose/
+target-image-parse/
+target-openpose-json/
+```
+
+Once these directories are populated, rerun:
+
+```powershell
+D:\conda-envs\vton\python.exe backend\training\scripts\audit_target_aligned_stableviton_readiness.py `
+  --data-root D:\GitHub\fit-reasoning-vton\backend\datasets\lora_pilot_aihub_10k_agnostic_v3_full `
+  --output-root D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\review `
+  --limit 100
+```
+
+Then run the target-aligned layout copy command from section 15.
