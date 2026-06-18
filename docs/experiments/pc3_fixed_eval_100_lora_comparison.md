@@ -573,3 +573,135 @@ D:\conda-envs\vton\python.exe backend\training\scripts\audit_target_aligned_stab
 ```
 
 Then run the target-aligned layout copy command from section 15.
+
+## 17. Agnostic-v2 fixed_eval_100 re-evaluation
+
+PC2 regenerated only the `agnostic-v3.2` and `agnostic-mask` files for the
+fixed_eval_100 pair set using the v2 rule. The goal of this check was to see
+whether replacing only those two conditioning artifacts improves the already
+generated fixed_eval_100 comparison without changing image, cloth, target,
+DensePose, parsing, OpenPose, or cloth-mask files.
+
+PC2 server:
+
+```text
+http://10.10.55.145:8000/
+```
+
+Selected PC3 fixed_eval_100 artifact directories:
+
+```text
+AgnosticDir = D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_data\test\agnostic-v3.2
+MaskDir     = D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_data\test\agnostic-mask
+```
+
+These paths contain 100 fixed_eval pairs, not the full 9995-pair dataset.
+
+Backup before overwrite:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\datasets\fixed_eval_100_backup_agnostic_before_v2_20260618_190027
+```
+
+Download / overwrite result:
+
+| Item | Value |
+| --- | ---: |
+| pair_count | 100 |
+| agnostic-v3.2 downloaded | 100 |
+| agnostic-mask downloaded | 100 |
+| failed_pair_count | 0 |
+| final agnostic-v3.2 jpg count | 100 |
+| final agnostic-mask png count | 100 |
+
+Notes:
+
+- The first resumable curl attempt with `-C -` failed because the PC2 HTTP
+  server did not support byte ranges for these files.
+- The retry without resume succeeded for all 100 pairs.
+- PC2 served masks as `agnostic-mask/{pair_id}.png`, while the local
+  StableVITON fixed_eval layout uses `{pair_id}_mask.png`. The downloaded
+  files were therefore saved locally with the existing `_mask.png` naming.
+
+Re-evaluation command target:
+
+```text
+baseline StableVITON
+rank8-module8 LoRA
+```
+
+Excluded:
+
+```text
+rank8-module16
+```
+
+Generated local outputs:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\rank8_module8\saved_lora_inference_comparison_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\metrics\agnostic_v2_before_after_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\metrics\agnostic_v2_before_after_raw.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\contact_sheet\agnostic_v2_before_after_sample20.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\contact_sheet\agnostic_v2_top_delta20.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2\contact_sheet\agnostic_v2_diagnostic_sample5.jpg
+```
+
+These are generated outputs and are not included in Git.
+
+Inference success summary:
+
+| Method | output_count | failure_count | adapter_loaded |
+| --- | ---: | ---: | --- |
+| baseline after agnostic-v2 | 100 | 0 | n/a |
+| rank8-module8 after agnostic-v2 | 100 | 0 | true |
+
+Before/after metrics against `target/worn`:
+
+| Method | PSNR mean | SSIM mean |
+| --- | ---: | ---: |
+| baseline before | 18.863788 | 0.634995 |
+| baseline after agnostic-v2 | 18.400618 | 0.610350 |
+| rank8-module8 before | 18.874149 | 0.635203 |
+| rank8-module8 after agnostic-v2 | 18.491314 | 0.618041 |
+
+Mean deltas:
+
+| Comparison | Delta PSNR | Delta SSIM |
+| --- | ---: | ---: |
+| baseline after - before | -0.463170 | -0.024645 |
+| rank8-module8 after - before | -0.382835 | -0.017162 |
+
+Visual review notes:
+
+- The EXIF orientation issue is fixed in the comparison sheets.
+- The v2 `agnostic` / `agnostic-mask` replacement does not show a clear visual
+  improvement in the current StableVITON inference pipeline.
+- In several samples, `agnostic-after` and `mask-after` include a large
+  full-body silhouette or wide gray keep/remove regions. This appears to leak
+  into the generated output as gray outlines, transparent-looking garment
+  regions, or residual halos.
+- Because baseline StableVITON also degrades after the replacement, this is not
+  only a LoRA fine-tuning problem. The current agnostic-v2 artifact semantics or
+  naming/shape contract likely still does not match what the StableVITON
+  inference path expects.
+- The rank8-module8 adapter remains usable as a loader/inference smoke result,
+  but this agnostic-v2 replacement is not sufficient evidence of quality
+  improvement.
+
+Final judgment:
+
+```text
+agnostic-v2 effect on current fixed_eval_100: no measurable positive effect.
+```
+
+Recommended next action:
+
+1. Inspect the v2 mask rule against StableVITON's expected `agnostic-mask`
+   semantics before running more LoRA training.
+2. Confirm whether StableVITON expects the mask to represent the clothing
+   removal region, the person keep region, or the inverse of the current v2
+   output.
+3. Continue the target-aligned artifact patch path from sections 14-16, because
+   replacing source-side agnostic only does not solve the current training /
+   inference mismatch.
