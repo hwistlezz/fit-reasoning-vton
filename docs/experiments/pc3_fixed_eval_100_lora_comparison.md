@@ -705,3 +705,121 @@ Recommended next action:
 3. Continue the target-aligned artifact patch path from sections 14-16, because
    replacing source-side agnostic only does not solve the current training /
    inference mismatch.
+
+## 18. Agnostic-mask inversion contract test
+
+After the agnostic-v2 replacement degraded both baseline and rank8-module8, the
+next controlled test was to keep the agnostic-v2 image unchanged and invert only
+the `agnostic-mask` polarity:
+
+```text
+inverted_mask = 255 - original_mask
+```
+
+This test checks whether the v2 degradation is primarily caused by a simple
+black/white mask polarity mismatch.
+
+Important constraints:
+
+- The original fixed_eval_100 dataset was not overwritten.
+- `image`, `cloth`, `worn`, `image-densepose`, `image-parse`,
+  `openpose-json`, and `cloth-mask` were copied unchanged.
+- `agnostic-v3.2` was copied unchanged from the current agnostic-v2 files.
+- Only `agnostic-mask` was inverted in a separate eval root.
+- `rank8-module16` was not executed.
+
+Generated inverted eval root:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\fixed_eval_100_data
+```
+
+Generated local outputs:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\metrics\mask_inversion_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\metrics\mask_inversion_stats.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\metrics\mask_inversion_comparison_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\metrics\mask_inversion_comparison_raw.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\contact_sheet\mask_inversion_input_diagnostic5.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_v2_mask_inverted\contact_sheet\mask_inversion_before_v2_inverted_sample20.jpg
+```
+
+These files are generated outputs and are not included in Git.
+
+Mask statistics:
+
+| Metric | Value |
+| --- | ---: |
+| pair_count | 100 |
+| mean_nonzero_ratio_before | 0.126090 |
+| mean_nonzero_ratio_after | 0.873910 |
+| mean_pixel_before | 32.153056 |
+| mean_pixel_after | 222.846944 |
+
+Inference success summary:
+
+| Method | output_count | failure_count | adapter_loaded |
+| --- | ---: | ---: | --- |
+| baseline mask-inverted | 100 | 0 | n/a |
+| rank8-module8 mask-inverted | 100 | 0 | true |
+
+Three-way metric comparison against `target/worn`:
+
+| Method | PSNR mean | SSIM mean |
+| --- | ---: | ---: |
+| baseline before | 18.863788 | 0.634995 |
+| baseline agnostic-v2 | 18.400618 | 0.610350 |
+| baseline agnostic-v2 + mask inverted | 15.374788 | 0.466526 |
+| rank8-module8 before | 18.874149 | 0.635203 |
+| rank8-module8 agnostic-v2 | 18.491314 | 0.618041 |
+| rank8-module8 agnostic-v2 + mask inverted | 15.439033 | 0.465487 |
+
+Mean deltas:
+
+| Comparison | Delta PSNR | Delta SSIM |
+| --- | ---: | ---: |
+| baseline agnostic-v2 - before | -0.463170 | -0.024645 |
+| baseline inverted - before | -3.489000 | -0.168469 |
+| baseline inverted - agnostic-v2 | -3.025830 | -0.143824 |
+| rank8-module8 agnostic-v2 - before | -0.382835 | -0.017162 |
+| rank8-module8 inverted - before | -3.435116 | -0.169716 |
+| rank8-module8 inverted - agnostic-v2 | -3.052281 | -0.152554 |
+
+Visual review notes:
+
+- The inverted mask does not recover the baseline result.
+- Inverted-mask outputs are visibly worse than both the original before result
+  and the agnostic-v2 result.
+- The inverted mask tends to expose or preserve too much background/person
+  region in the wrong area, producing stronger halos, background leakage, and
+  gray residual regions.
+- Since baseline also gets much worse under mask inversion, the issue is not
+  specific to the LoRA adapter.
+
+Judgment:
+
+| Question | Judgment |
+| --- | --- |
+| Is this a simple mask inversion issue? | no |
+| Is agnostic fill / region definition still suspicious? | yes |
+| Is parse/upstream artifact issue possible? | uncertain |
+
+Interpretation:
+
+- A pure polarity inversion is not the correct fix.
+- The original agnostic-v2 mask direction is closer than the inverted version,
+  but the agnostic-v2 result still underperforms the previous fixed_eval result.
+- The likely problem is the agnostic-v2 fill/region rule itself, or a mismatch
+  between the agnostic image, mask boundary, and StableVITON's expected
+  conditioning format.
+
+Next recommended action:
+
+1. Do not retrain LoRA on this mask-inverted contract.
+2. Keep mask polarity as the current non-inverted v2 direction for now.
+3. Ask PC2 to refine the agnostic-v2 region definition rather than simply
+   inverting the mask.
+4. Prioritize a tiny target-aligned artifact patch from sections 14-16, because
+   the current source-side fixed_eval inputs still do not fully match the
+   correct StableVITON training/inference contract.
