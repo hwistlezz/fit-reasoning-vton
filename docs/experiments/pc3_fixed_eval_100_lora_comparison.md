@@ -823,3 +823,131 @@ Next recommended action:
 4. Prioritize a tiny target-aligned artifact patch from sections 14-16, because
    the current source-side fixed_eval inputs still do not fully match the
    correct StableVITON training/inference contract.
+
+## 19. Agnostic / mask cross ablation
+
+The mask inversion test showed that simple polarity inversion is not the fix.
+The next controlled experiment separated the `agnostic-v3.2` image and
+`agnostic-mask` effects by crossing v1 and v2 artifacts:
+
+| Combination | Agnostic image | Agnostic mask |
+| --- | --- | --- |
+| baseline_original | v1 | v1 |
+| v2_full | v2 | v2 |
+| agnostic_v1_mask_v2 | v1 | v2 |
+| agnostic_v2_mask_v1 | v2 | v1 |
+
+`rank8-module16` was not executed.
+
+Input artifact sources:
+
+```text
+fixed_eval root:
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_data\test
+
+agnostic-v1 backup:
+D:\GitHub\fit-reasoning-vton\backend\datasets\fixed_eval_100_backup_agnostic_before_v2_20260618_190027
+
+agnostic-v2 current:
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_data\test\agnostic-v3.2
+
+mask-v2 current:
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_exif_fixed\fixed_eval_100_data\test\agnostic-mask
+```
+
+Generated local output root:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation
+```
+
+Generated local files:
+
+```text
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\metrics\ablation_dataset_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\metrics\ablation_dataset_mask_stats.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\metrics\agnostic_mask_ablation_summary.json
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\metrics\agnostic_mask_ablation_raw.csv
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\contact_sheet\agnostic_mask_ablation_sample20.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\contact_sheet\agnostic_mask_ablation_top_delta20.jpg
+D:\GitHub\fit-reasoning-vton\backend\training\outputs\fixed_eval_100_lora_comparison_agnostic_mask_ablation\contact_sheet\agnostic_mask_ablation_worst_delta20.jpg
+```
+
+These are generated outputs and are not included in Git.
+
+Dataset build summary:
+
+| Combination | pair_count | agnostic_source | mask_source | mean_mask_nonzero_ratio | mean_mask_pixel |
+| --- | ---: | --- | --- | ---: | ---: |
+| agnostic_v1_mask_v2 | 100 | v1 | v2 | 0.126090 | 32.153056 |
+| agnostic_v2_mask_v1 | 100 | v2 | v1 | 0.049859 | 12.713943 |
+
+Inference success summary:
+
+| Combination | baseline output_count | rank8-module8 output_count | adapter_loaded |
+| --- | ---: | ---: | --- |
+| agnostic_v1_mask_v2 | 100 | 100 | true |
+| agnostic_v2_mask_v1 | 100 | 100 | true |
+
+Metric comparison against `target/worn`:
+
+| Method | PSNR mean | SSIM mean |
+| --- | ---: | ---: |
+| baseline original | 18.863788 | 0.634995 |
+| baseline v2 full | 18.400618 | 0.610350 |
+| baseline agnostic-v1 + mask-v2 | 18.904850 | 0.636439 |
+| baseline agnostic-v2 + mask-v1 | 17.579401 | 0.558754 |
+| rank8-module8 original | 18.874149 | 0.635203 |
+| rank8-module8 v2 full | 18.491314 | 0.618041 |
+| rank8-module8 agnostic-v1 + mask-v2 | 18.883890 | 0.635572 |
+| rank8-module8 agnostic-v2 + mask-v1 | 17.559734 | 0.555960 |
+
+Mean deltas from original:
+
+| Comparison | Delta PSNR | Delta SSIM |
+| --- | ---: | ---: |
+| baseline v2 full - original | -0.463170 | -0.024645 |
+| baseline agnostic-v1 + mask-v2 - original | +0.041062 | +0.001444 |
+| baseline agnostic-v2 + mask-v1 - original | -1.284387 | -0.076241 |
+| rank8-module8 v2 full - original | -0.382835 | -0.017162 |
+| rank8-module8 agnostic-v1 + mask-v2 - original | +0.009741 | +0.000369 |
+| rank8-module8 agnostic-v2 + mask-v1 - original | -1.314415 | -0.079243 |
+
+Visual review notes:
+
+- `agnostic-v1 + mask-v2` visually returns close to the original baseline and
+  rank8-module8 outputs.
+- `agnostic-v2 + mask-v1` remains visibly degraded, with gray fill blocks,
+  halo-like remnants, and unstable garment placement.
+- This isolates the main regression to the agnostic-v2 image/fill rule rather
+  than the mask-v2 region by itself.
+- The v2 mask is wider than v1, but it does not cause the degradation when used
+  with the v1 agnostic image.
+
+Judgment:
+
+| Question | Judgment |
+| --- | --- |
+| Is agnostic fill the main issue? | yes |
+| Is mask-v2 region the main issue? | no |
+| Is parse/upstream issue still possible? | uncertain, but not primary from this ablation |
+
+Interpretation:
+
+- `agnostic-v1 + mask-v2` nearly recovers or slightly exceeds the original
+  metric, so the v2 mask region alone is not the failure driver.
+- `agnostic-v2 + mask-v1` is worse than v2 full, so reverting only the mask
+  cannot fix the v2 degradation.
+- The primary issue is the agnostic-v2 image generation/fill rule. The current
+  v2 agnostic image appears to remove/fill too much of the person or injects
+  large gray regions that StableVITON treats as visible conditioning content.
+
+Next recommended action:
+
+1. Do not retrain LoRA with the current agnostic-v2 fill rule.
+2. Keep the v2 mask candidate available, because it does not appear to be the
+   main regression source when paired with v1 agnostic.
+3. Ask PC2 to revise agnostic-v2 image generation so the filled region follows
+   StableVITON's expected agnostic image style more closely.
+4. Re-run only a small fixed_eval_100 baseline check after the agnostic fill
+   rule changes, before any new full LoRA training.
