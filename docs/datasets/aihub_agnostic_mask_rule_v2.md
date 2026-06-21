@@ -27,6 +27,32 @@ suspicious too large: > 0.40
 
 The saved `agnostic-mask` remains binary. Any feathering or blur should be limited to debug visualization, not the training artifact.
 
+## Agnostic Fill Modes
+
+`generate_keypoint_agnostic_v3.py` supports explicit fill modes:
+
+- `gray`: legacy hard neutral fill, controlled by `--gray-value`.
+- `blurred_person`: fills only the replacement mask area with a strongly blurred version of the person image and softly feathers the inside of the mask boundary.
+- `original_person`: debug-only mode that preserves the original person pixels.
+
+For fill-only QA patches, reuse the existing v2 mask and write only `agnostic-v3.2`:
+
+```powershell
+python scripts\generate_keypoint_agnostic_v3.py `
+  --data-root C:\fit_transfer\work_39k_chunks\chunk_000 `
+  --layout chunk-flat `
+  --metadata D:\fit_transfer\reports\chunks\chunk_000\metadata_chunk_final.csv `
+  --output-root C:\fit_transfer\patches\chunk_000_agnostic_blur_fill_100 `
+  --limit 100 `
+  --force-pair EP00000002 `
+  --mask-source existing `
+  --skip-mask-output `
+  --fill-mode blurred_person `
+  --diagnostics-json D:\fit_transfer\reports\chunks\chunk_000\agnostic_blur_fill_patch_100_diagnostics.json
+```
+
+This patch layout intentionally excludes `agnostic-mask`; PC3 should keep using the already extracted chunk mask-v2 files.
+
 ## Smoke Command
 
 ```powershell

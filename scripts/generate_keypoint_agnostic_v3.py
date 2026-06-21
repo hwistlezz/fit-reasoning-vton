@@ -65,6 +65,31 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--force-pair", action="append", default=[])
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--gray-value", type=int, default=128)
+    ap.add_argument(
+        "--fill-mode",
+        choices=("gray", "blurred_person", "original_person"),
+        default="gray",
+        help=(
+            "Agnostic fill strategy. 'gray' preserves the legacy hard neutral fill, "
+            "'blurred_person' fills the replacement area from a strongly blurred person image, "
+            "and 'original_person' is debug-only."
+        ),
+    )
+    ap.add_argument(
+        "--mask-source",
+        choices=("generated", "existing"),
+        default="generated",
+        help="Use the generated v2 replacement mask or an existing agnostic-mask from --data-root.",
+    )
+    ap.add_argument(
+        "--skip-mask-output",
+        action="store_true",
+        help="Write only agnostic-v3.2 images. Useful for fill-only patches that reuse existing masks.",
+    )
+    ap.add_argument("--blur-radius-scale", type=float, default=0.025)
+    ap.add_argument("--blur-radius-min", type=float, default=31.0)
+    ap.add_argument("--feather-radius-scale", type=float, default=0.0035)
+    ap.add_argument("--feather-radius-min", type=float, default=4.0)
     ap.add_argument("--include-arms", dest="include_arms", action="store_true", default=True)
     ap.add_argument("--exclude-arms", dest="include_arms", action="store_false")
     ap.add_argument("--use-annotation-polygons", dest="use_annotation_polygons", action="store_true", default=True)
@@ -227,6 +252,14 @@ def output_paths(output_root: Path, layout: str, item: WorkItem) -> tuple[Path, 
         mask_out = output_root / "test" / "agnostic-mask" / f"{Path(item.person_name).stem}_mask.png"
         return image_out, mask_out
     return output_root / "agnostic-v3.2" / f"{item.pair_id}.jpg", output_root / "agnostic-mask" / f"{item.pair_id}.png"
+
+
+def existing_mask_path(data_root: Path, layout: str, item: WorkItem) -> Path | None:
+    if layout == "stableviton":
+        stem = Path(item.person_name).stem
+        base = data_root / "test" / "agnostic-mask"
+        return find_existing([base / f"{stem}_mask.png", base / f"{stem}.png"])
+    return find_existing(candidate_paths(data_root / "agnostic-mask", item.pair_id, (".png", ".jpg", ".jpeg")))
 
 
 def resolve_annotation_path(value: str) -> Path | None:
@@ -531,6 +564,65 @@ def apply_neutral_fill(image: np.ndarray, mask: np.ndarray, gray_value: int) -> 
     return agnostic
 
 
+def apply_blurred_person_fill(image: np.ndarray, mask: np.ndarray, args: argparse.Namespace) -> np.ndarray:
+    h, w = image.shape[:2]
+    min_dim = max(1, min(h, w))
+    blur_sigma = max(float(args.blur_radius_min), float(min_dim) * float(args.blur_radius_scale))
+    feather_sigma = max(float(args.feather_radius_min), float(min_dim) * float(args.feather_radius_scale))
+    blurred = cv2.GaussianBlur(image, (0, 0), sigmaX=blur_sigma, sigmaY=blur_sigma)
+    alpha = (mask > 0).astype(np.float32)
+    if feather_sigma > 0:
+        alpha = cv2.GaussianBlur(alpha, (0, 0), sigmaX=feather_sigma, sigmaY=feather_sigma)
+        alpha[mask <= 0] = 0.0
+    alpha = np.clip(alpha, 0.0, 1.0)[..., None]
+    agnostic = image.astype(np.float32) * (1.0 - alpha) + blurred.astype(np.float32) * alpha
+    return np.clip(agnostic, 0, 255).astype(np.uint8)
+
+
+def apply_fill(image: np.ndarray, mask: np.ndarray, args: argparse.Namespace) -> np.ndarray:
+    if args.fill_mode == "gray":
+        return apply_neutral_fill(image, mask, args.gray_value)
+    if args.fill_mode == "blurred_person":
+        return apply_blurred_person_fill(image, mask, args)
+    if args.fill_mode == "original_person":
+        return image.copy()
+    raise ValueError(f"Unsupported fill mode: {args.fill_mode}")
+
+
+def load_existing_mask(mask_path: Path | None, image_shape: tuple[int, int, int]) -> tuple[np.ndarray | None, dict[str, Any]]:
+    info: dict[str, Any] = {
+        "mask_source": "existing",
+        "existing_mask_path": str(mask_path) if mask_path else "",
+    }
+    if not mask_path:
+        info["reason"] = "missing_existing_agnostic_mask"
+        return None, info
+    mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+    if mask is None:
+        info["reason"] = "existing_agnostic_mask_read_failed"
+        return None, info
+    if mask.shape[:2] != image_shape[:2]:
+        info.update(
+            {
+                "reason": "existing_agnostic_mask_size_mismatch",
+                "image_size": [int(image_shape[1]), int(image_shape[0])],
+                "mask_size": [int(mask.shape[1]), int(mask.shape[0])],
+            }
+        )
+        return None, info
+    mask = (mask > 0).astype(np.uint8) * 255
+    ratio = mask_ratio(mask)
+    info.update(
+        {
+            "reason": "",
+            "mask_ratio": ratio,
+            "suspicious_small": ratio < 0.08,
+            "suspicious_large": ratio > 0.40,
+        }
+    )
+    return mask, info
+
+
 def process_one(
     data_root: Path,
     output_root: Path,
@@ -554,33 +646,52 @@ def process_one(
     if not img_path:
         detail["reason"] = "missing_image"
         return detail
-    if not kp_path:
+    if args.mask_source == "generated" and not kp_path:
         detail["reason"] = "missing_openpose_json"
         return detail
     image = cv2.imread(str(img_path), cv2.IMREAD_COLOR)
     if image is None:
         detail["reason"] = "image_read_failed"
         return detail
-    kps = load_keypoints(kp_path)
-    if not kps:
+    kps = load_keypoints(kp_path) if kp_path else {}
+    if args.mask_source == "generated" and not kps:
         detail["reason"] = "no_valid_openpose_keypoints"
         return detail
-    mask, mask_info = build_replacement_mask(image.shape, kps, annotation_path, item.category, args)
+    if args.mask_source == "existing":
+        mask, mask_info = load_existing_mask(existing_mask_path(data_root, layout, item), image.shape)
+        if mask is None:
+            detail["reason"] = mask_info.get("reason", "existing_mask_failed")
+            detail.update(mask_info)
+            return detail
+    else:
+        mask, mask_info = build_replacement_mask(image.shape, kps, annotation_path, item.category, args)
+        mask_info["mask_source"] = "generated"
     if int(mask.sum()) <= 0:
         detail["reason"] = "empty_mask"
         return detail
 
-    agnostic = apply_neutral_fill(image, mask, args.gray_value)
+    agnostic = apply_fill(image, mask, args)
     out_img, out_mask = output_paths(output_root, layout, item)
     out_img.parent.mkdir(parents=True, exist_ok=True)
-    out_mask.parent.mkdir(parents=True, exist_ok=True)
     ok_img = cv2.imwrite(str(out_img), agnostic)
-    ok_mask = cv2.imwrite(str(out_mask), mask)
+    ok_mask = True
+    if not args.skip_mask_output:
+        out_mask.parent.mkdir(parents=True, exist_ok=True)
+        ok_mask = cv2.imwrite(str(out_mask), mask)
     if not ok_img or not ok_mask:
         detail["reason"] = "write_failed"
         return detail
     detail.update(mask_info)
-    detail.update({"status": "ok", "reason": "", "agnostic_path": str(out_img), "mask_path": str(out_mask)})
+    detail.update(
+        {
+            "status": "ok",
+            "reason": "",
+            "fill_mode": args.fill_mode,
+            "agnostic_path": str(out_img),
+            "mask_path": "" if args.skip_mask_output else str(out_mask),
+            "mask_output_skipped": bool(args.skip_mask_output),
+        }
+    )
     return detail
 
 
@@ -593,6 +704,8 @@ def write_diagnostics(path: Path | None, details: list[dict[str, Any]], data_roo
     summary = {
         "data_root": str(data_root),
         "output_root": str(output_root),
+        "fill_modes": sorted({str(item.get("fill_mode")) for item in ok if item.get("fill_mode")}),
+        "mask_sources": sorted({str(item.get("mask_source")) for item in ok if item.get("mask_source")}),
         "requested": len(details),
         "generated": len(ok),
         "failed": len(details) - len(ok),
