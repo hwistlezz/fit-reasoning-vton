@@ -458,6 +458,7 @@ def process_one(
     if save_fit_json:
         fit_path.parent.mkdir(parents=True, exist_ok=True)
         fit_payload = {
+            "schema_version": "fit_analysis.v2",
             "pair_id": pair_id,
             "split": split,
             "fit_label": row["fit_label"],
@@ -472,7 +473,9 @@ def process_one(
                 "pose_quality": row["pose_quality"],
                 "parsing_quality": row["parsing_quality"],
                 "body_visibility": row["body_visibility"],
+                "quality_score": row["quality_score"],
             },
+            "hotspots": annotations,
             "annotations": annotations,
             "inputs": {
                 "image": str(image_path),

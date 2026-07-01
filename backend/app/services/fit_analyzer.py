@@ -1,5 +1,5 @@
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +14,7 @@ FIT_SCORE_KEYS = (
     "sleeve_length_ratio",
     "garment_length_ratio",
 )
+FIT_ANALYSIS_SCHEMA_VERSION = "fit_analysis.v2"
 FIT_JSON_FALLBACK_WARNING = "fit.json을 읽지 못해 placeholder 결과를 반환했습니다."
 ANNOTATION_LABELS = {
     "shoulder": "어깨",
@@ -40,13 +41,37 @@ class FitResult:
 
 
 @dataclass(frozen=True)
+class QualityResult:
+    pose_quality: float | None = None
+    parsing_quality: float | None = None
+    body_visibility: float | None = None
+    quality_score: float | None = None
+    silhouette_score: float | None = None
+
+
+@dataclass(frozen=True)
 class FitAnalysisResult:
     confidence: ConfidenceResult
     fit: FitResult
     annotations: list[dict[str, Any]]
+    quality: QualityResult = field(default_factory=QualityResult)
+    source: dict[str, Any] = field(default_factory=dict)
+    schema_version: str = FIT_ANALYSIS_SCHEMA_VERSION
 
     def to_response_payload(self) -> dict[str, Any]:
-        return asdict(self)
+        scores = asdict(self.fit)["scores"]
+        annotations = [dict(annotation) for annotation in self.annotations]
+        return {
+            "schema_version": self.schema_version,
+            "source": dict(self.source),
+            "fit_label": self.fit.label,
+            "measurements": scores,
+            "confidence": asdict(self.confidence),
+            "fit": asdict(self.fit),
+            "quality": asdict(self.quality),
+            "hotspots": annotations,
+            "annotations": annotations,
+        }
 
 
 def confidence_level_for_score(score: int | float) -> str:
@@ -83,7 +108,12 @@ def analyze_fit_placeholder(job_id: str, result_image_url: str | None) -> FitAna
         ],
     )
 
-    return FitAnalysisResult(confidence=confidence, fit=fit, annotations=[])
+    return FitAnalysisResult(
+        confidence=confidence,
+        fit=fit,
+        annotations=[],
+        source={"type": "placeholder", "job_id": job_id},
+    )
 
 
 def analyze_fit(
@@ -130,30 +160,50 @@ def _is_pc2_compact_fit_result(payload: dict[str, Any]) -> bool:
 def _load_backend_compatible_fit_result(payload: dict[str, Any]) -> FitAnalysisResult:
     confidence_payload = _require_dict(payload.get("confidence"), "confidence")
     fit_payload = _require_dict(payload.get("fit"), "fit")
-    annotations_payload = payload.get("annotations", [])
+    annotations_payload = payload.get("hotspots", payload.get("annotations", []))
     if not isinstance(annotations_payload, list):
         raise ValueError("annotations must be a list.")
 
     confidence = _parse_confidence(confidence_payload)
     fit = _parse_fit(fit_payload)
+    quality = _parse_quality(payload.get("quality", {}))
     annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
     annotations = [annotation for annotation in annotations if annotation is not None]
+    source = _parse_source(payload.get("source"), default_type="backend_compatible")
 
-    return FitAnalysisResult(confidence=confidence, fit=fit, annotations=annotations)
+    return FitAnalysisResult(
+        confidence=confidence,
+        fit=fit,
+        annotations=annotations,
+        quality=quality,
+        source=source,
+    )
 
 
 def _load_pc2_compact_fit_result(payload: dict[str, Any]) -> FitAnalysisResult:
     features_payload = _require_dict(payload.get("features"), "features")
-    annotations_payload = payload.get("annotations", [])
+    annotations_payload = payload.get("hotspots", payload.get("annotations", []))
     if not isinstance(annotations_payload, list):
         raise ValueError("annotations must be a list.")
 
     confidence = _parse_compact_confidence(payload.get("confidence"))
     fit = _parse_compact_fit(payload.get("fit_label"), features_payload)
+    quality = _parse_compact_quality(payload, features_payload)
     annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
     annotations = [annotation for annotation in annotations if annotation is not None]
+    source = {
+        "type": "pc2_compact",
+        "pair_id": payload.get("pair_id"),
+        "split": payload.get("split"),
+    }
 
-    return FitAnalysisResult(confidence=confidence, fit=fit, annotations=annotations)
+    return FitAnalysisResult(
+        confidence=confidence,
+        fit=fit,
+        annotations=annotations,
+        quality=quality,
+        source=source,
+    )
 
 
 def _require_dict(value: Any, field_name: str) -> dict[str, Any]:
@@ -213,6 +263,21 @@ def _parse_fit(payload: dict[str, Any]) -> FitResult:
     return FitResult(label=label, scores=scores, explanations=explanations)
 
 
+def _parse_quality(payload: Any) -> QualityResult:
+    if payload is None:
+        return QualityResult()
+    if not isinstance(payload, dict):
+        raise ValueError("quality must be an object.")
+
+    return QualityResult(
+        pose_quality=_optional_number(payload.get("pose_quality"), "quality.pose_quality"),
+        parsing_quality=_optional_number(payload.get("parsing_quality"), "quality.parsing_quality"),
+        body_visibility=_optional_number(payload.get("body_visibility"), "quality.body_visibility"),
+        quality_score=_optional_number(payload.get("quality_score"), "quality.quality_score"),
+        silhouette_score=_optional_number(payload.get("silhouette_score"), "quality.silhouette_score"),
+    )
+
+
 def _parse_compact_fit(label: Any, features: dict[str, Any]) -> FitResult:
     if not isinstance(label, str):
         raise ValueError("fit_label must be a string.")
@@ -222,6 +287,25 @@ def _parse_compact_fit(label: Any, features: dict[str, Any]) -> FitResult:
         scores[key] = _optional_number(features.get(key), f"features.{key}")
 
     return FitResult(label=label, scores=scores, explanations=[])
+
+
+def _parse_compact_quality(payload: dict[str, Any], features: dict[str, Any]) -> QualityResult:
+    quality_payload = {
+        "pose_quality": features.get("pose_quality"),
+        "parsing_quality": features.get("parsing_quality"),
+        "body_visibility": features.get("body_visibility"),
+        "quality_score": payload.get("quality_score", features.get("quality_score")),
+        "silhouette_score": features.get("silhouette_score"),
+    }
+    return _parse_quality(quality_payload)
+
+
+def _parse_source(value: Any, default_type: str) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, str) and value:
+        return {"type": value}
+    return {"type": default_type}
 
 
 def _parse_annotation(payload: Any) -> dict[str, Any] | None:
@@ -278,4 +362,6 @@ def _placeholder_with_fit_json_warning(job_id: str, result_image_url: str | None
         confidence=confidence,
         fit=placeholder.fit,
         annotations=placeholder.annotations,
+        quality=placeholder.quality,
+        source=placeholder.source,
     )

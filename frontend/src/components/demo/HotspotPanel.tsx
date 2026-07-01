@@ -35,7 +35,7 @@ export default function HotspotPanel({
               <h3 className="text-sm font-semibold text-[#E5EDF8]">
                 {hotspot.label}
               </h3>
-              {hotspot.value ? (
+              {hotspot.value !== undefined && hotspot.value !== null ? (
                 <span className="rounded-lg border border-[#74C365]/25 bg-[#74C365]/10 px-2 py-1 text-xs font-semibold text-[#A7E39C]">
                   {hotspot.value}
                 </span>

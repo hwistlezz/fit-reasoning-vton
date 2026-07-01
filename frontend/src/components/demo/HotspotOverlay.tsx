@@ -35,7 +35,7 @@ export default function HotspotOverlay({ hotspots }: HotspotOverlayProps) {
                 <span className="mt-1 block text-xs leading-5 text-[#9AA8BA]">
                   {hotspot.text}
                 </span>
-                {hotspot.value ? (
+                {hotspot.value !== undefined && hotspot.value !== null ? (
                   <span className="mt-2 block text-xs font-semibold text-[#74C365]">
                     {hotspot.value}
                   </span>
