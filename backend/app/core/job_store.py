@@ -146,7 +146,10 @@ def write_success_result(job_id: str, result_filename: str = "result.png") -> No
         "result_image_url": result_image_url,
         "confidence": analysis["confidence"],
         "fit": analysis["fit"],
+        "quality": analysis["quality"],
         "annotations": analysis["annotations"],
+        "hotspots": analysis["hotspots"],
+        "fit_analysis": analysis,
         "message": RESULT_DONE_MESSAGE,
     }
     write_json(job_dir / "result.json", result)
@@ -169,7 +172,10 @@ def write_failed_result(job_id: str, code: str, message: str) -> None:
         "result_image_url": None,
         "confidence": None,
         "fit": None,
+        "quality": None,
         "annotations": [],
+        "hotspots": [],
+        "fit_analysis": None,
         "message": message,
         "error": error,
     }
@@ -232,7 +238,10 @@ async def create_pending_job(
             "result_image_url": None,
             "confidence": None,
             "fit": None,
+            "quality": None,
             "annotations": [],
+            "hotspots": [],
+            "fit_analysis": None,
             "message": RESULT_PENDING_MESSAGE,
         }
 
@@ -262,8 +271,11 @@ def read_job_result(job_id: str) -> dict[str, Any]:
     job_dir = get_existing_job_dir(job_id)
     result = read_json(job_dir / "result.json")
     result["annotations"] = result.get("annotations") or []
+    result["hotspots"] = result.get("hotspots") or result["annotations"]
     result.setdefault("confidence", None)
     result.setdefault("fit", None)
+    result.setdefault("quality", None)
+    result.setdefault("fit_analysis", None)
     result.setdefault("result_image_url", None)
     result.setdefault("message", "")
     result.setdefault("error", None)

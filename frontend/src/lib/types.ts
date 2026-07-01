@@ -61,7 +61,7 @@ export type Hotspot = {
   text: string;
   x: number;
   y: number;
-  value?: string;
+  value?: number | string | null;
 };
 
 export type Keypoint = {
