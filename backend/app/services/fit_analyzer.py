@@ -14,6 +14,16 @@ FIT_SCORE_KEYS = (
     "sleeve_length_ratio",
     "garment_length_ratio",
 )
+CORE_RATIO_KEYS = ("shoulder_ratio", "torso_width_ratio", "garment_length_ratio")
+HOTSPOT_SCORE_KEYS = {
+    "shoulder": "shoulder_ratio",
+    "torso": "torso_width_ratio",
+    "length": "garment_length_ratio",
+    "sleeve": "sleeve_length_ratio",
+}
+SLEEVE_PROXY_WARNING = "sleeve_length_ratio is a wrist-alignment proxy, not a calibrated sleeve-end measurement."
+UNKNOWN_CLOTH_TYPE_WARNING = "cloth_type_unknown"
+MISSING_CORE_RATIO_WARNING = "missing_core_ratio_count"
 FIT_ANALYSIS_SCHEMA_VERSION = "fit_analysis.v2"
 FIT_JSON_FALLBACK_WARNING = "fit.json을 읽지 못해 placeholder 결과를 반환했습니다."
 ANNOTATION_LABELS = {
@@ -169,6 +179,7 @@ def _load_backend_compatible_fit_result(payload: dict[str, Any]) -> FitAnalysisR
     quality = _parse_quality(payload.get("quality", {}))
     annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
     annotations = [annotation for annotation in annotations if annotation is not None]
+    annotations = _filter_annotations_for_scores(annotations, fit.scores)
     source = _parse_source(payload.get("source"), default_type="backend_compatible")
 
     return FitAnalysisResult(
@@ -188,9 +199,11 @@ def _load_pc2_compact_fit_result(payload: dict[str, Any]) -> FitAnalysisResult:
 
     confidence = _parse_compact_confidence(payload.get("confidence"))
     fit = _parse_compact_fit(payload.get("fit_label"), features_payload)
+    confidence, fit = _calibrate_compact_fit_analysis(confidence, fit, payload, features_payload)
     quality = _parse_compact_quality(payload, features_payload)
     annotations = [_parse_annotation(annotation) for annotation in annotations_payload]
     annotations = [annotation for annotation in annotations if annotation is not None]
+    annotations = _filter_annotations_for_scores(annotations, fit.scores)
     source = {
         "type": "pc2_compact",
         "pair_id": payload.get("pair_id"),
@@ -241,6 +254,92 @@ def _compact_confidence_level(score: int | float) -> str:
     if score < 80:
         return "medium"
     return "high"
+
+
+def _calibrate_compact_fit_analysis(
+    confidence: ConfidenceResult,
+    fit: FitResult,
+    payload: dict[str, Any],
+    features: dict[str, Any],
+) -> tuple[ConfidenceResult, FitResult]:
+    missing_keys = [key for key in CORE_RATIO_KEYS if fit.scores.get(key) is None]
+    cloth_type = _compact_cloth_type(payload, features)
+    score = float(confidence.score)
+    warnings = _compact_warnings(payload, confidence.warnings)
+
+    if missing_keys:
+        warnings.append(f"{MISSING_CORE_RATIO_WARNING}={len(missing_keys)}")
+
+    penalty_missing_count = len(missing_keys)
+    if cloth_type == "bottom" and missing_keys == ["shoulder_ratio"]:
+        penalty_missing_count = 0
+    if penalty_missing_count:
+        score -= min(20.0, 8.0 * penalty_missing_count)
+
+    if cloth_type == "unknown":
+        score -= 12.0
+        warnings.append(UNKNOWN_CLOTH_TYPE_WARNING)
+
+    if fit.scores.get("sleeve_length_ratio") is not None:
+        warnings.append(SLEEVE_PROXY_WARNING)
+
+    score = round(max(0.0, min(100.0, score)), 2)
+    label = fit.label
+    explanations = list(fit.explanations)
+    if score < 45 or (cloth_type == "unknown" and len(missing_keys) >= 2):
+        if label != "unknown_low_confidence":
+            explanations.append("Fit label lowered because calibration found insufficient core ratio coverage.")
+        label = "unknown_low_confidence"
+
+    return (
+        ConfidenceResult(score=score, level=_compact_confidence_level(score), warnings=_dedupe_strings(warnings)),
+        FitResult(label=label, scores=fit.scores, explanations=explanations),
+    )
+
+
+def _compact_cloth_type(payload: dict[str, Any], features: dict[str, Any]) -> str:
+    value = payload.get("cloth_type", features.get("cloth_type"))
+    if isinstance(value, str) and value:
+        return value.lower()
+    return ""
+
+
+def _compact_warnings(payload: dict[str, Any], existing: list[str]) -> list[str]:
+    warnings = list(existing)
+    for key in ("confidence_warnings", "warnings"):
+        value = payload.get(key)
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            warnings.extend(value)
+    return warnings
+
+
+def _dedupe_strings(values: list[str]) -> list[str]:
+    seen = set()
+    output = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        output.append(value)
+    return output
+
+
+def _filter_annotations_for_scores(
+    annotations: list[dict[str, Any]],
+    scores: dict[str, float | None],
+) -> list[dict[str, Any]]:
+    filtered = []
+    for annotation in annotations:
+        key = annotation.get("key")
+        score_key = HOTSPOT_SCORE_KEYS.get(key)
+        if score_key is not None and scores.get(score_key) is None:
+            continue
+        if key == "sleeve" and scores.get("sleeve_length_ratio") is not None:
+            text = annotation.get("text") or ""
+            if SLEEVE_PROXY_WARNING not in text:
+                annotation = {**annotation, "text": f"{text} {SLEEVE_PROXY_WARNING}".strip()}
+        filtered.append(annotation)
+    return filtered
 
 
 def _parse_fit(payload: dict[str, Any]) -> FitResult:
