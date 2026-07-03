@@ -67,6 +67,10 @@ ARM = {2, 3}
 LEG = {4, 5}
 FACE = {1}
 BODY = UPPER | LOWER | FULL_BODY_CLOTHES | ARM | LEG | FACE
+CORE_RATIO_KEYS = ("shoulder_ratio", "torso_width_ratio", "garment_length_ratio")
+SLEEVE_PROXY_WARNING = "sleeve_length_ratio is a wrist-alignment proxy, not a calibrated sleeve-end measurement."
+UNKNOWN_CLOTH_TYPE_WARNING = "cloth_type_unknown"
+MISSING_CORE_RATIO_WARNING = "missing_core_ratio_count"
 
 Point = Tuple[float, float]
 KpDict = Dict[str, Tuple[float, float, float]]
@@ -187,13 +191,55 @@ def safe_ratio(num: Optional[float], den: Optional[float]) -> Optional[float]:
     return float(val)
 
 
+def missing_core_ratio_keys(features: Dict[str, Any]) -> List[str]:
+    return [key for key in CORE_RATIO_KEYS if features.get(key) is None]
+
+
+def confidence_penalty_missing_count(features: Dict[str, Any], missing_keys: List[str]) -> int:
+    cloth_type = str(features.get("cloth_type") or "unknown").lower()
+    if cloth_type == "bottom" and missing_keys == ["shoulder_ratio"]:
+        return 0
+    return len(missing_keys)
+
+
+def calibrate_confidence(features: Dict[str, Any], base_score: float) -> Tuple[float, List[str]]:
+    missing_keys = missing_core_ratio_keys(features)
+    penalty_missing_count = confidence_penalty_missing_count(features, missing_keys)
+    score = float(base_score)
+    warnings: List[str] = []
+
+    if missing_keys:
+        warnings.append(f"{MISSING_CORE_RATIO_WARNING}={len(missing_keys)}")
+    if penalty_missing_count:
+        score -= min(20.0, 8.0 * penalty_missing_count)
+
+    if str(features.get("cloth_type") or "unknown").lower() == "unknown":
+        score -= 12.0
+        warnings.append(UNKNOWN_CLOTH_TYPE_WARNING)
+
+    if features.get("sleeve_length_ratio") is not None:
+        warnings.append(SLEEVE_PROXY_WARNING)
+
+    return round(max(0.0, min(100.0, score)), 2), warnings
+
+
 def classify_fit(features: Dict[str, Any]) -> str:
     if float(features.get("confidence") or 0) < 45:
+        return "unknown_low_confidence"
+
+    cloth_type = str(features.get("cloth_type") or "unknown").lower()
+    missing_core_count = len(missing_core_ratio_keys(features))
+    if cloth_type == "unknown" and missing_core_count >= 2:
         return "unknown_low_confidence"
 
     sr = features.get("shoulder_ratio")
     tr = features.get("torso_width_ratio")
     gl = features.get("garment_length_ratio")
+
+    if cloth_type == "bottom":
+        if tr is not None and gl is not None and (tr > 1.18 or gl > 1.20):
+            return "slightly_oversized"
+        return "regular"
 
     if sr is not None and tr is not None and gl is not None:
         if sr > 1.18 and tr > 1.22 and gl > 1.12:
@@ -397,17 +443,20 @@ def process_one(
         + 0.10 * generation_consistency
     )
     row["quality_score"] = round(quality_score, 6)
-    row["confidence"] = round(quality_score * 100, 2)
+    row["confidence"], confidence_warnings = calibrate_confidence(row, quality_score * 100)
+    row["_confidence_warnings"] = confidence_warnings
+    row["_missing_core_ratio_count"] = len(missing_core_ratio_keys(row))
+    row["_core_ratio_complete"] = row["_missing_core_ratio_count"] == 0
     row["fit_label"] = classify_fit(row)
     row["error_code"] = "|".join(errors)
 
     if save_annotations and width > 0 and height > 0:
-        if left_shoulder and right_shoulder:
+        if row["shoulder_ratio"] is not None and left_shoulder and right_shoulder:
             annotations.append(
                 make_annotation(
                     "shoulder",
-                    "어깨",
-                    "어깨선과 신체 어깨 위치를 비교합니다.",
+                    "Shoulder",
+                    "Shoulder hotspot generated from shoulder_ratio.",
                     (left_shoulder[0] + right_shoulder[0]) / 2,
                     (left_shoulder[1] + right_shoulder[1]) / 2,
                     width,
@@ -415,12 +464,12 @@ def process_one(
                     row["shoulder_ratio"],
                 )
             )
-        if left_shoulder and right_shoulder and left_hip and right_hip:
+        if row["torso_width_ratio"] is not None and left_shoulder and right_shoulder and left_hip and right_hip:
             annotations.append(
                 make_annotation(
                     "torso",
-                    "몸통",
-                    "몸통 폭과 의류 여유분을 비교합니다.",
+                    "Torso",
+                    "Torso hotspot generated from torso_width_ratio.",
                     (left_shoulder[0] + right_shoulder[0] + left_hip[0] + right_hip[0]) / 4,
                     (left_shoulder[1] + right_shoulder[1] + left_hip[1] + right_hip[1]) / 4,
                     width,
@@ -428,11 +477,12 @@ def process_one(
                     row["torso_width_ratio"],
                 )
             )
+        if row["garment_length_ratio"] is not None and left_shoulder and right_shoulder and left_hip and right_hip:
             annotations.append(
                 make_annotation(
                     "length",
-                    "기장",
-                    "상의 기장이 골반 기준으로 어느 정도 내려오는지 봅니다.",
+                    "Length",
+                    "Length hotspot generated from garment_length_ratio.",
                     (left_hip[0] + right_hip[0]) / 2,
                     (left_hip[1] + right_hip[1]) / 2,
                     width,
@@ -441,12 +491,12 @@ def process_one(
                 )
             )
         wrist = left_wrist or right_wrist
-        if wrist:
+        if row["sleeve_length_ratio"] is not None and wrist:
             annotations.append(
                 make_annotation(
                     "sleeve",
-                    "소매",
-                    "소매 끝 위치와 손목 위치를 비교합니다.",
+                    "Sleeve",
+                    "Sleeve hotspot generated from sleeve_length_ratio. " + SLEEVE_PROXY_WARNING,
                     wrist[0],
                     wrist[1],
                     width,
@@ -463,12 +513,16 @@ def process_one(
             "split": split,
             "fit_label": row["fit_label"],
             "confidence": row["confidence"],
+            "confidence_warnings": row.get("_confidence_warnings", []),
             "quality_score": row["quality_score"],
             "features": {
+                "cloth_type": row["cloth_type"],
                 "shoulder_ratio": row["shoulder_ratio"],
                 "torso_width_ratio": row["torso_width_ratio"],
                 "sleeve_length_ratio": row["sleeve_length_ratio"],
                 "garment_length_ratio": row["garment_length_ratio"],
+                "missing_core_ratio_count": row.get("_missing_core_ratio_count"),
+                "core_ratio_complete": row.get("_core_ratio_complete"),
                 "silhouette_score": row["silhouette_score"],
                 "pose_quality": row["pose_quality"],
                 "parsing_quality": row["parsing_quality"],
