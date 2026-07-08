@@ -259,3 +259,55 @@ Generation artifact warnings are intentionally future fields. Examples:
 
 These should be added at the candidate layer first. Only move them into
 `fit_analysis` if the fit analyzer directly computes them.
+
+## Production Online Visual Proxy
+
+Offline visual scoring may use worn/target references and PSNR/SSIM for
+evaluation. Production scoring must not depend on those references. Production
+candidate reranking should use a separate online visual proxy score attached at
+the candidate layer.
+
+Online visual fields:
+
+- `online_visual_score`
+- `online_visual_score_source`
+- `online_visual_score_mode`
+- `online_visual_components`
+- `online_visual_warnings`
+- `candidate_specific_online_score`
+- `production_safe`
+
+Recommended combination:
+
+```text
+if online_visual_score is unavailable:
+  combined_score = fit_score - 5
+else:
+  combined_score = 0.75 * fit_score + 0.25 * online_visual_score - warning_penalty
+```
+
+Use online visual scoring as a tie-breaker and visual quality guardrail:
+
+1. eligible success candidate
+2. higher `combined_score`
+3. higher `fit_score`
+4. higher `online_visual_score`
+5. higher confidence score
+6. fewer warnings
+7. fewer missing core ratios
+8. stable `candidate_id`
+
+Warning penalties should be conservative and based on measured artifacts, not
+generator name. Example penalties:
+
+- `generation_artifact_mild`: `-3`
+- `generation_artifact_severe`: `-12`
+- `agnostic_change_leakage`: `-6`
+- `body_region_distortion_proxy`: `-8`
+- missing candidate image: ineligible
+
+Detailed design:
+
+```text
+docs/online_candidate_visual_proxy_scorer.md
+```

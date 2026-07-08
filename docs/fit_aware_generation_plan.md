@@ -298,3 +298,46 @@ changes:
 - output: Python dict selection payload following `fit_aware_selection.v1`
 - selection eligibility: `inference_status == "success"` and image path or URL
   exists
+
+## Online Visual Proxy Layer
+
+The first candidate visual scorer uses offline worn/target references for
+evaluation smoke tests. Production cannot depend on those references. The
+production path should add a separate online visual proxy layer that uses only:
+
+- generated try-on image
+- person image
+- cloth image
+- agnostic-mask
+- agnostic-v3.2
+- image-parse
+- openpose-json
+- cloth-mask
+- optional densepose
+- candidate manifest metadata
+
+The online score should be attached at the candidate layer, not inside
+`fit_analysis.v2`, with fields such as:
+
+- `online_visual_score`
+- `online_visual_score_source`
+- `online_visual_score_mode`
+- `online_visual_components`
+- `online_visual_warnings`
+- `candidate_specific_online_score`
+- `production_safe`
+
+Detailed contract:
+
+```text
+docs/online_candidate_visual_proxy_scorer.md
+```
+
+Integration principle:
+
+```text
+combined_score = 0.75 * fit_score + 0.25 * online_visual_score - warning_penalty
+```
+
+The online score should act as a production-safe candidate-specific visual
+guardrail and tie-breaker. It should not replace calibrated fit measurements.
